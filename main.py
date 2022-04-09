@@ -1,4 +1,8 @@
+import os
+
 from jinja2 import Environment, PackageLoader, select_autoescape
+
+from db import Database
 
 env = Environment(
     loader=PackageLoader('app'),
@@ -8,4 +12,6 @@ env = Environment(
 template = env.get_template("index.html")
 
 if __name__ == '__main__':
-    print(template.render(the="variables", go="here"))
+    cloud = Database(os.environ.get("ENDPOINT"), os.environ.get("DATABASE"))
+    print(template.render(products=cloud.get_products()))
+    cloud.disconnect()
