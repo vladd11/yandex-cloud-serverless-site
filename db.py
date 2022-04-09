@@ -65,7 +65,7 @@ class Database:
                                                        "$price": product.price,
                                                        "$description": product.description}, commit_tx=True)
 
-    def remove_product(self, uid):
+    def remove_product(self, uid: bytes):
         self.session.transaction().execute(self.queries.remove_product, {"$uid": uid})
 
     def disconnect(self):
