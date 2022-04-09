@@ -18,6 +18,11 @@ if __name__ == '__main__':
 
     deployer = Deployer()
     for path in glob.glob('app\\templates\\*'):
-        deployer.add_page(os.path.basename(path), template.render(products=db.get_products()))
-        print(f'Deployed: {os.path.basename(path)}')
+        base = os.path.basename(path)
+
+        # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
+        if os.path.splitext(os.path.splitext(base)[0])[1] == '':
+            deployer.add_page(base, template.render(products=db.get_products()))
+            print(f'Deployed: {base}')
+
     db.disconnect()
