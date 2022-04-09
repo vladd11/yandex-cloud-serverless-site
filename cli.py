@@ -7,6 +7,8 @@ from deploy import Deployer
 from product import Product
 from jinja2 import Environment
 
+from user import User
+
 
 class Cli:
     def __init__(self, db: Database, deployer: Deployer, env: Environment):
@@ -51,3 +53,22 @@ class Cli:
         :param price: Product's price
         """
         self.db.update_product(Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price))
+
+    def create_user(self, phone: str):
+        """
+            Create user with specified phone number
+            :param phone Phone number of user
+        """
+        self.db.create_user(phone)
+
+    def add_order(self, uid: str, products_count: int):
+        products = []
+        for i in range(products_count):
+            product = Product()
+            product.uid = input(f"Product ({i}) UID: ")
+            products.append(product)
+
+        self.db.create_order(User(uuid.UUID(uid).bytes), product)
+
+    def create_tables(self):
+        self.db.create_tables()

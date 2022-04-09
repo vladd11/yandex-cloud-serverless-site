@@ -5,6 +5,7 @@ import boto3
 
 class Deployer:
     def __init__(self, bucket_name=os.environ.get("BUCKET_NAME")):
+
         self.bucket_name = bucket_name
 
         session = boto3.session.Session()

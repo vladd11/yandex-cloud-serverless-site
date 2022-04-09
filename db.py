@@ -1,10 +1,13 @@
+import uuid
 from typing import List
 
 import ydb
 import ydb.iam
 
 import queries
+from order import Order
 from product import Product
+from user import User
 
 
 class Database:
@@ -20,30 +23,30 @@ class Database:
         # with ydb.SessionPool(driver) as self.pool:
         self.session = self.driver.table_client.session().create()
         self.queries = queries.Queries(self.session)
-        # noinspection PyBroadException
-        try:
-            table = self.session.describe_table(database + '/products')
-            for i in table.columns:
-                for j in self.PRODUCT_COLUMNS:
-                    if i.name == j:
-                        self.PRODUCT_COLUMNS.remove(j)
 
-            if len(self.PRODUCT_COLUMNS) != 0:
-                raise Exception(f"Missing columns: {self.PRODUCT_COLUMNS}")
-        except Exception:
-            self.session.create_table(
-                database + '/products',
-                ydb.TableDescription()
-                .with_column(ydb.Column('id', ydb.OptionalType(ydb.PrimitiveType.String)))  # UUIDv4, bytes
-                .with_column(ydb.Column('title', ydb.OptionalType(ydb.PrimitiveType.Utf8)))
-                .with_column(ydb.Column('description', ydb.OptionalType(ydb.PrimitiveType.Utf8)))
-                .with_column(ydb.Column('price', ydb.OptionalType(ydb.PrimitiveType.Uint64)))
-                # .with_column(ydb.Column('price', ydb.OptionalType(ydb.DecimalType)))
-                .with_primary_key('id')
-            )
+    def create_tables(self):
+        self.session.transaction().execute('''
+        CREATE TABLE `orders`
+        (
+            `id` String,
+            `hasPaid` Bool,
+            `isCompeted` Bool,
+            `price` Uint64,
+            `user_id` String,
+            PRIMARY KEY (`id`),
+            INDEX idx_user_id GLOBAL ON (user_id)
+        );''')
+
+        self.session.transaction().execute('''
+        CREATE TABLE `users`
+        (
+            `id` String,
+            `phone` Utf8,
+            PRIMARY KEY (`id`)
+        );''')
 
     def create_product(self, product: Product):
-        result = self.session.transaction(ydb.SerializableReadWrite()).execute(
+        self.session.transaction(ydb.SerializableReadWrite()).execute(
             self.queries.create_product,
             {"$id": product.uid,
              "$description": product.description,
@@ -66,7 +69,31 @@ class Database:
                                                        "$description": product.description}, commit_tx=True)
 
     def remove_product(self, uid: bytes):
-        self.session.transaction().execute(self.queries.remove_product, {"$uid": uid})
+        self.session.transaction().execute(self.queries.remove_product,
+                                           {"$uid": uid},
+                                           commit_tx=True)
 
     def disconnect(self):
         self.driver.stop(10)
+
+    def create_user(self, phone: str) -> User:
+        """
+            Create user with specified phone number
+            :param phone Phone number of user
+        """
+
+        uid = uuid.uuid4().bytes
+        self.session.transaction().execute(self.queries.create_user,
+                                           {"$id": uid, "$phone": phone},
+                                           commit_tx=True)
+        return User(uid, phone)
+
+    def create_order(self, user: User, products: List[Product]) -> Order:
+        uid = uuid.uuid4().bytes
+        price = sum(product.price for product in products)
+
+        self.session.transaction().execute(self.queries.add_orders,
+                                           {'$id': uid,
+                                            '$price': price,
+                                            '$user_id': user.uid}, commit_tx=True)
+        return Order(uid, price, user, products, False, False)
