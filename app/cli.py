@@ -2,12 +2,12 @@ import glob
 import os
 import uuid
 
-from db import Database
-from deploy import Deployer
-from product import Product
+from app.db import Database
+from app.deploy import Deployer
+from common.product import Product
 from jinja2 import Environment
 
-from user import User
+from common.user import User
 
 
 class Cli:
@@ -20,7 +20,7 @@ class Cli:
         """
         Deploy site to Yandex Cloud Object Storage
         """
-        for path in glob.glob('app\\templates\\*'):
+        for path in glob.glob('app/templates/*'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             if os.path.splitext(os.path.splitext(base)[0])[1] == '':
@@ -54,12 +54,12 @@ class Cli:
         """
         self.db.update_product(Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price))
 
-    def create_user(self, phone: str):
+    def create_user(self, phone: int):
         """
             Create user with specified phone number
             :param phone Phone number of user
         """
-        self.db.create_user(phone)
+        self.db.create_user(str(phone))
 
     def add_order(self, uid: str, products_count: int):
         products = []
@@ -68,7 +68,10 @@ class Cli:
             product.uid = input(f"Product ({i}) UID: ")
             products.append(product)
 
-        self.db.create_order(User(uuid.UUID(uid).bytes), product)
+        self.db.create_order(User(uuid.UUID(uid).bytes), products)
+
+    def deploy_lambdas(self):
+        self.deployer.zip_lambdas()
 
     def create_tables(self):
         self.db.create_tables()

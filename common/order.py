@@ -1,7 +1,7 @@
 from typing import List
 
-from product import Product
-from user import User
+from common.product import Product
+from common.user import User
 
 
 class Order:

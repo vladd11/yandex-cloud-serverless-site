@@ -4,10 +4,10 @@ from typing import List
 import ydb
 import ydb.iam
 
-import queries
-from order import Order
-from product import Product
-from user import User
+from app import queries
+from common.order import Order
+from common.product import Product
+from common.user import User
 
 
 class Database:
@@ -15,10 +15,7 @@ class Database:
 
     def __init__(self, endpoint, database):
         self.database = database
-        self.driver = ydb.Driver(endpoint=endpoint, database=database,
-                                 credentials=ydb.iam.ServiceAccountCredentials.from_file(
-                                     "C:\\Users\\rozhk\\sa.json",
-                                 ), )
+        self.driver = ydb.Driver(endpoint=endpoint, database=database,)
         self.driver.wait(timeout=10, fail_fast=True)
         # with ydb.SessionPool(driver) as self.pool:
         self.session = self.driver.table_client.session().create()
@@ -90,7 +87,11 @@ class Database:
 
     def create_order(self, user: User, products: List[Product]) -> Order:
         uid = uuid.uuid4().bytes
-        price = sum(product.price for product in products)
+
+        if len(products) != 1:
+            price = sum(product.price for product in products)
+        else:
+            price = products[0].price
 
         self.session.transaction().execute(self.queries.add_orders,
                                            {'$id': uid,

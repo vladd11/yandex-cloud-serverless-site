@@ -3,12 +3,12 @@ import os
 from fire import Fire
 from jinja2 import Environment, PackageLoader, select_autoescape
 
-from cli import Cli
-from db import Database
-from deploy import Deployer
+from app.cli import Cli
+from app.db import Database
+from app.deploy import Deployer
 
 env = Environment(
-    loader=PackageLoader('app'),
+    loader=PackageLoader(package_name='app'),
     autoescape=select_autoescape()
 )
 
