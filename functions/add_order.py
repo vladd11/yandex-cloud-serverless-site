@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Dict
+from typing import List
 
 import ydb
 from ydb import Session
@@ -41,5 +41,5 @@ def add_order(pool: ydb.SessionPool, queries: Queries, body, user_uid: str):
     pool.retry_operation_sync(query, None, queries, products, User(uuid.UUID(user_uid).bytes))
     return {
         'statusCode': 200,
-        'body': 0,
+        'body': '',
     }
