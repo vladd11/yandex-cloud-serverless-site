@@ -14,7 +14,8 @@ import sms
 
 jwt = PyJWT()
 
-SMS_CODE_EXPIRATION_TIME = os.environ.get('CODE_EXPIRATION_TIME') or 600
+SMS_VERIFICATION_ENABLED = bool(os.environ.get('SMS_VERIFICATION_ENABLED'))
+SMS_CODE_EXPIRATION_TIME = os.environ.get('SMS_CODE_EXPIRATION_TIME') or 600
 SMS_CODE_LENGTH = os.environ.get('SMS_CODE_LENGTH') or 6
 
 SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1)
@@ -69,7 +70,9 @@ def register(pool: ydb.SessionPool, queries: Queries, phone: str, password: str)
         sms_code = random.randint(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
 
         pool.retry_operation_sync(register_query, None, queries, uid.bytes, phone, password, sms_code)
-        sms.send_sms(phone, f'Your SMS code is: {sms_code}')
+
+        if SMS_VERIFICATION_ENABLED:
+            sms.send_sms(phone, f'Your SMS code is: {sms_code}')
     except PreconditionFailed:
         return {'statusCode': 401}
     return {
