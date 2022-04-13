@@ -1,3 +1,4 @@
+import importlib
 import os
 import random
 import time
@@ -9,6 +10,7 @@ import ydb
 from jwt import PyJWT, InvalidSignatureError
 from ydb import PreconditionFailed
 from functions.lambda_queries import Queries
+import sms
 
 jwt = PyJWT()
 
@@ -17,6 +19,8 @@ SMS_CODE_LENGTH = os.environ.get('SMS_CODE_LENGTH') or 6
 
 SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1)
 SMS_CODE_RANDMAX = (10 ** SMS_CODE_LENGTH) - 1
+
+sms = importlib.import_module(f'sms.{os.environ.get("SMS_CLASS") or "smsc_ru"}')
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
@@ -48,12 +52,12 @@ def login(pool: ydb.SessionPool, queries: Queries, phone: str, password: str) ->
             algorithm="HS256")}
 
 
-def register_query(session: ydb.Session, queries: Queries, uid: bytes, phone: str, password: str):
+def register_query(session: ydb.Session, queries: Queries, uid: bytes, phone: str, password: str, sms_code: str):
     session.transaction().execute(queries.add_user,
                                   {'$phone': phone,
                                    '$password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()),
                                    '$id': uid,
-                                   '$sms_code': random.randint(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX),
+                                   '$sms_code': sms_code,
                                    '$sms_code_expiration': int(time.time()) + SMS_CODE_EXPIRATION_TIME},
                                   commit_tx=True)
 
@@ -62,7 +66,10 @@ def register(pool: ydb.SessionPool, queries: Queries, phone: str, password: str)
     uid = uuid.uuid4()
 
     try:
-        pool.retry_operation_sync(register_query, None, queries, uid.bytes, phone, password)
+        sms_code = random.randint(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
+
+        pool.retry_operation_sync(register_query, None, queries, uid.bytes, phone, password, sms_code)
+        sms.send_sms(phone, f'Your SMS code is: {sms_code}')
     except PreconditionFailed:
         return {'statusCode': 401}
     return {
