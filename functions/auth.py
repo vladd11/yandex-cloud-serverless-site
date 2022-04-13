@@ -12,6 +12,12 @@ from functions.lambda_queries import Queries
 
 jwt = PyJWT()
 
+SMS_CODE_EXPIRATION_TIME = os.environ.get('CODE_EXPIRATION_TIME') or 600
+SMS_CODE_LENGTH = os.environ.get('SMS_CODE_LENGTH') or 6
+
+SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1)
+SMS_CODE_RANDMAX = (10 ** SMS_CODE_LENGTH) - 1
+
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 
@@ -47,8 +53,8 @@ def register_query(session: ydb.Session, queries: Queries, uid: bytes, phone: st
                                   {'$phone': phone,
                                    '$password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()),
                                    '$id': uid,
-                                   '$sms_code': random.randint(100000, 999999),
-                                   '$sms_code_expiration': int(time.time()) + 600},
+                                   '$sms_code': random.randint(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX),
+                                   '$sms_code_expiration': int(time.time()) + SMS_CODE_EXPIRATION_TIME},
                                   commit_tx=True)
 
 
