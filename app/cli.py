@@ -20,7 +20,7 @@ class Cli:
         """
         Deploy site to Yandex Cloud Object Storage
         """
-        for path in glob.glob('app/templates/*'):
+        for path in glob.glob('templates/*'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             if os.path.splitext(os.path.splitext(base)[0])[1] == '':

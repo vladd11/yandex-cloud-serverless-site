@@ -24,6 +24,9 @@ class Deployer:
     @staticmethod
     def zip_lambdas():
         with zipfile.ZipFile('../main.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
-            for file in glob.glob('../functions/*') + glob.glob('../common/*') + glob.glob('../sms/*') + glob.glob('../requirements.txt'):
+            for file in glob.glob('../functions/*') + glob.glob('../common/*') + glob.glob('../sms/*'):
+                if '__pycache__' in file:
+                    continue
+
                 print(f'Added {file}')
                 zipf.write(file, arcname=file[3:])
