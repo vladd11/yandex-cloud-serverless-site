@@ -55,7 +55,7 @@ class Database:
         products = []
         for row in result[0].rows:
             row = row['column0']
-            products.append(Product(title=row[0], description=row[1], price=row[2] / 100, uid=row[3]))
+            products.append(Product(title=row[0], description=row[1], price=row[2] / 100, uid=row[3], image_uri=row[4]))
         return products
 
     def update_product(self, product):
@@ -63,6 +63,7 @@ class Database:
                                            parameters={"$id": product.uid,
                                                        "$title": product.title,
                                                        "$price": product.price,
+                                                       "$image_uri": product.image_uri,
                                                        "$description": product.description}, commit_tx=True)
 
     def remove_product(self, uid: bytes):

@@ -49,15 +49,16 @@ class Cli:
         """
         self.db.remove_product(uuid.UUID(uid).bytes)
 
-    def update_product(self, uid: str, title: str, description: str, price: float):
+    def update_product(self, uid: str, title: str, description: str, price: float, image_uri: str):
         """
         Update product in database
+        :param image_uri: URL of the image that will be displayed on index page
         :param uid: UID of the product
         :param title: Product's title
         :param description: Product's description
         :param price: Product's price
         """
-        self.db.update_product(Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price))
+        self.db.update_product(Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price, image_uri=image_uri))
 
     def create_user(self, phone: int):
         """
