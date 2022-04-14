@@ -1,5 +1,6 @@
 import glob
 import os
+import shutil
 import uuid
 
 from app.db import Database
@@ -24,7 +25,11 @@ class Cli:
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             if os.path.splitext(os.path.splitext(base)[0])[1] == '':
-                self.deployer.add_page(base, self._env.get_template(base).render(products=self.db.get_products()))
+                page = self._env.get_template(base).render(products=self.db.get_products())
+                with open(f'tmp/{base}', 'w') as f:
+                    f.write(page)
+
+                #self.deployer.add_page(base, page)
                 print(f'Deployed: {base}')
 
     def add_product(self, title: str, description: str, price: float):

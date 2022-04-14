@@ -18,7 +18,7 @@ class Deployer:
         )
         """ :type : pyboto3.s3 """
 
-    def add_page(self, page_name: str, page_body: str, storage_class='COLD'):
+    def add_page(self, page_name: str, page_body: str, storage_class='STANDARD'):
         self.s3.put_object(Bucket=self.bucket_name, Key=page_name, Body=page_body, StorageClass=storage_class)
 
     @staticmethod

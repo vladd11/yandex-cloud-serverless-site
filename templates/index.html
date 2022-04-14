@@ -9,9 +9,21 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="header.css?ver=1">
+    <link rel="stylesheet" type="text/css" href="index.css?ver=1">
+    <link rel="stylesheet" type="text/css" href="footer.css?ver=1">
 </head>
 <body>
 {% include 'header.template.html' %}
-<div></div>
+<div class="products">
+    {% for product in products %}
+        <div class="product">
+            <div class="product_img"><img src="pizza.jpg" alt="" width="300" height="150"></div>
+            <div class="product_title">{{ product.title }}</div>
+            <div class="product_description">{{ product.description }}</div>
+            <div class="product_price">{{ product.price }} ₽</div>
+        </div>
+    {% endfor %}
+</div>
+{% include 'footer.template.html' %}
 </body>
 </html>

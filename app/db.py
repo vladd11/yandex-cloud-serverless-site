@@ -53,8 +53,8 @@ class Database:
     def get_products(self) -> List[Product]:
         result = self.session.transaction().execute(self.queries.get_products)
         products = []
-        for row in result:
-            row = row.rows[0]['column0']
+        for row in result[0].rows:
+            row = row['column0']
             products.append(Product(title=row[0], description=row[1], price=row[2] / 100, uid=row[3]))
         return products
 
