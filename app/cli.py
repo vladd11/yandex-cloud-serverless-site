@@ -24,23 +24,29 @@ class Cli:
         for path in glob.glob('templates/*'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
-            if os.path.splitext(os.path.splitext(base)[0])[1] == '':
-                page = self._env.get_template(base).render(products=self.db.get_products())
-                with open(f'tmp/{base}', 'w') as f:
-                    f.write(page)
+            exts = os.path.splitext(base)
+            if os.path.splitext(exts[0])[1] == '':
+                if exts[1] == '.html':
+                    page = self._env.get_template(base).render(products=self.db.get_products())
+                    with open(f'tmp/{base}', 'w') as f:
+                        f.write(page)
+                else:
+                    shutil.copy('templates/' + base, 'tmp/' + base)
 
-                #self.deployer.add_page(base, page)
+                # self.deployer.add_page(base, page)
                 print(f'Deployed: {base}')
 
-    def add_product(self, title: str, description: str, price: float):
+    def add_product(self, title: str, description: str, price: float, image_uri: str):
         """
         Add product to the database
 
+        :param image_uri: URL of the image
         :param title: Product title
         :param description: Product description
         :param price: Product price
         """
-        self.db.create_product(Product(title=title, description=description, price=price, uid=uuid.uuid4().bytes))
+        self.db.create_product(
+            Product(title=title, description=description, price=price, uid=uuid.uuid4().bytes, image_uri=image_uri))
 
     def remove_product(self, uid: str):
         """
@@ -58,7 +64,8 @@ class Cli:
         :param description: Product's description
         :param price: Product's price
         """
-        self.db.update_product(Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price, image_uri=image_uri))
+        self.db.update_product(
+            Product(uid=uuid.UUID(uid).bytes, title=title, description=description, price=price, image_uri=image_uri))
 
     def create_user(self, phone: int):
         """

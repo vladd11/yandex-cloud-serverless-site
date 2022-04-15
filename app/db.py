@@ -15,7 +15,7 @@ class Database:
 
     def __init__(self, endpoint, database):
         self.database = database
-        self.driver = ydb.Driver(endpoint=endpoint, database=database,)
+        self.driver = ydb.Driver(endpoint=endpoint, database=database, )
         self.driver.wait(timeout=10, fail_fast=True)
         # with ydb.SessionPool(driver) as self.pool:
         self.session = self.driver.table_client.session().create()
@@ -47,7 +47,9 @@ class Database:
             self.queries.create_product,
             {"$id": product.uid,
              "$description": product.description,
-             "$title": product.title, "$price": product.price * 100},
+             "$title": product.title,
+             "$price": product.price * 100,
+             "$image_uri": product.image_uri},
             commit_tx=True)
 
     def get_products(self) -> List[Product]:

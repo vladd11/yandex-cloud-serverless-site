@@ -17,7 +17,7 @@
 <div class="products">
     {% for product in products %}
         <div class="product">
-            <div class="product_img"><img src="pizza.jpg" alt="" width="300" height="150"></div>
+            <div class="product_img"><img src="{{ product.image_uri }}" alt="" width="300" height="150"></div>
             <div class="product_title">{{ product.title }}</div>
             <div class="product_description">{{ product.description }}</div>
             <div class="product_price">{{ product.price }} ₽</div>
