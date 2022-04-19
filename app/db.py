@@ -49,7 +49,8 @@ class Database:
              "$description": product.description,
              "$title": product.title,
              "$price": product.price * 100,
-             "$image_uri": product.image_uri},
+             "$image_uri": product.image_uri,
+             "$category": product.category},
             commit_tx=True)
 
     def get_products(self) -> List[Product]:
@@ -57,8 +58,20 @@ class Database:
         products = []
         for row in result[0].rows:
             row = row['column0']
-            products.append(Product(title=row[0], description=row[1], price=row[2] / 100, uid=row[3], image_uri=row[4]))
+            products.append(Product(title=row[0],
+                                    description=row[1],
+                                    price=row[2] / 100,
+                                    uid=row[3],
+                                    image_uri=row[4],
+                                    category=row[5]))
         return products
+
+    def get_categories(self) -> List[str]:
+        categories = []
+        result = self.session.transaction().execute(self.queries.get_categories)
+        for row in result[0].rows:
+            categories.append(row[0])
+        return categories
 
     def update_product(self, product):
         self.session.transaction().execute(self.queries.update_product,

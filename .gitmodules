@@ -1,0 +1,6 @@
+[submodule "src/site-deploy"]
+	path = src/site-deploy
+	url = git@github.com:vladd11/site-deploy.git
+[submodule "site-deploy"]
+	path = site-deploy
+	url = git@github.com:vladd11/site-deploy.git

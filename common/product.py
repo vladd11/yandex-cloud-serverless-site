@@ -3,9 +3,11 @@ class Product:
                  description: str = None,
                  price: float = None,
                  uid: bytes = None,
-                 image_uri: str = None):
+                 image_uri: str = None,
+                 category: str = None):
         self.image_uri = image_uri
         self.uid = uid
         self.price = price
         self.description = description
         self.title = title
+        self.category = category

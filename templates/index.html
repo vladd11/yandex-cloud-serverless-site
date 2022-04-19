@@ -2,28 +2,133 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <title>Shop | Главная</title>
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="header.css?ver=1">
-    <link rel="stylesheet" type="text/css" href="index.css?ver=1">
-    <link rel="stylesheet" type="text/css" href="footer.css?ver=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Example page of shop">
 </head>
 <body>
-{% include 'header.template.html' %}
-<div class="products">
-    {% for product in products %}
-        <div class="product">
-            <div class="product_img"><img src="{{ product.image_uri }}" alt="" width="300" height="150"></div>
-            <div class="product_title">{{ product.title }}</div>
-            <div class="product_description">{{ product.description }}</div>
-            <div class="product_price">{{ product.price }} ₽</div>
+
+<div class="address_overlay" id="address_overlay" hidden>
+    <div class="address_view">
+        Ваш адрес:
+        <span id="address_text"></span>
+
+        <span class="material-icons close" id="close">
+            close
+        </span>
+    </div>
+
+    <div class="map_container">
+        <div class="material-icons center-marker" id="place">
+            place
+        </div>
+        <div id="map"></div>
+    </div>
+</div>
+
+<header>
+    <div class="title clickable">Shop</div>
+    <div class="address clickable" id="address">
+        <span class="material-icons" style="font-size: 28px">
+            place
+        </span>
+
+        <span class="your_address">
+            Ваш адрес
+        </span>
+    </div>
+    <nav class="right_panel">
+        <span class="item last-item clickable">
+            <span class="material-icons big">
+                search
+            </span>
+            Поиск
+        </span>
+
+        <span class="item clickable">
+            <span class="material-icons big">
+                account_circle
+            </span>
+            Войти
+        </span>
+
+        <span class="item first-item clickable">
+            <span class="material-icons big">
+                shopping_cart
+            </span>
+            Корзина
+        </span>
+    </nav>
+</header>
+
+<div class="chips" id="chips">
+    {% for category in categories %}
+        <div class="chip">
+            <span class="material-icons chip-icon">
+                check
+            </span>
+            {{ category }}
         </div>
     {% endfor %}
 </div>
-{% include 'footer.template.html' %}
+
+<div class="products" id="products">
+    {% for product in products %}
+        <div class="product">
+            <div class="product_img"><img src="{{ product.image_uri }}" alt="" width="300" height="150" loading="lazy"></div>
+            <div class="product_title">{{ product.title }}</div>
+            <div class="product_description">{{ product.description }}</div>
+            <div class="product_price">{{ product.price / 100 }} ₽</div>
+        </div>
+    {% endfor %}
+</div>
+<footer>
+    <ul class="list">
+        <li class="info_text">Контакты:</li>
+
+        <li class="footer-icon-li">
+            <span class="material-icons footer-icon">
+                phone
+            </span>
+            <div class="list_text">
+                <span>Телефон:</span>
+                <span><a href="tel:{{ info.phone }}">{{ info.phone }}</a></span>
+            </div>
+        </li>
+        <li class="footer-icon-li">
+            <span class="material-icons footer-icon">
+                email
+            </span>
+            <div class="list_text">
+                <span>
+                    Электронная почта:
+                </span>
+                <span>
+                    <a href="mailto:{{ info.email }}">{{ info.email }}</a>
+                </span>
+            </div>
+        </li>
+        <li class="footer-icon-li">
+            <span class="material-icons footer-icon">
+                place
+            </span>
+            <div class="list_text">
+                <span>
+                    Адрес:
+                </span>
+                <span>
+                    <a href="{{ info.address_link }}">{{ info.address }}</a>
+                </span>
+            </div>
+        </li>
+    </ul>
+    <ul class="list info_block">
+        <li class="info_text">Информация:</li>
+        <li><a href="about">О магазине</a></li>
+        <li><a href="delivery">Доставка</a></li>
+        <li><a href="warranty">Гарантия</a></li>
+    </ul>
+</footer>
 </body>
 </html>

@@ -1,6 +1,8 @@
 import glob
+import json
 import os
 import shutil
+import subprocess
 import uuid
 
 from app.db import Database
@@ -9,6 +11,15 @@ from common.product import Product
 from jinja2 import Environment
 
 from common.user import User
+
+
+class ProductEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Product):
+            product_dict = obj.__dict__
+            product_dict['uid'] = str(uuid.UUID(bytes_le=obj.uid))
+            return product_dict
+        return json.JSONEncoder.default(self, obj)
 
 
 class Cli:
@@ -21,32 +32,41 @@ class Cli:
         """
         Deploy site to Yandex Cloud Object Storage
         """
-        for path in glob.glob('templates/*'):
+        products = self.db.get_products()
+        categories = self.db.get_categories()
+        for path in glob.glob('templates/*.html'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             exts = os.path.splitext(base)
             if os.path.splitext(exts[0])[1] == '':
-                if exts[1] == '.html':
-                    page = self._env.get_template(base).render(products=self.db.get_products())
-                    with open(f'tmp/{base}', 'w') as f:
-                        f.write(page)
-                else:
-                    shutil.copy('templates/' + base, 'tmp/' + base)
+                page = self._env.get_template(base).render(products=products,
+                                                           categories=categories,
+                                                           info=json.load(open('info.json', 'r')))
+                with open(f'site-deploy/{base}', 'w') as f:
+                    f.write(page)
 
-                # self.deployer.add_page(base, page)
                 print(f'Deployed: {base}')
+                # self.deployer.add_page(base, page)
 
-    def add_product(self, title: str, description: str, price: float, image_uri: str):
+        json.dump(products, open('tmp/products.json', 'w'), cls=ProductEncoder)
+
+    def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """
         Add product to the database
 
+        :param category: Category of the product
         :param image_uri: URL of the image
         :param title: Product title
         :param description: Product description
         :param price: Product price
         """
         self.db.create_product(
-            Product(title=title, description=description, price=price, uid=uuid.uuid4().bytes, image_uri=image_uri))
+            Product(title=title,
+                    description=description,
+                    price=price,
+                    uid=uuid.uuid4().bytes,
+                    image_uri=image_uri,
+                    category=category))
 
     def remove_product(self, uid: str):
         """
