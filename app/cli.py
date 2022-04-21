@@ -1,15 +1,14 @@
 import glob
 import json
 import os
-import shutil
-import subprocess
+
 import uuid
 
-from app.db import Database
-from app.deploy import Deployer
-from common.product import Product
+from git import Repo
 from jinja2 import Environment
 
+from app.db import Database
+from common.product import Product
 from common.user import User
 
 
@@ -17,15 +16,17 @@ class ProductEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Product):
             product_dict = obj.__dict__
-            product_dict['uid'] = str(uuid.UUID(bytes_le=obj.uid))
+            if isinstance(obj.uid, bytes):
+                product_dict['uid'] = str(uuid.UUID(bytes_le=obj.uid))
+
             return product_dict
         return json.JSONEncoder.default(self, obj)
 
 
 class Cli:
-    def __init__(self, db: Database, deployer: Deployer, env: Environment):
+    def __init__(self, db: Database, env: Environment):
+        self.deploy_repo = Repo('site-deploy/')
         self._env = env
-        self.deployer = deployer
         self.db = db
 
     def deploy(self):
@@ -33,22 +34,29 @@ class Cli:
         Deploy site to Yandex Cloud Object Storage
         """
         products = self.db.get_products()
+        for product in products:
+            if len(product.uid) == 16:
+                product.uid = str(uuid.UUID(bytes_le=product.uid))
+
         categories = self.db.get_categories()
-        for path in glob.glob('templates/*.html'):
+
+        for path in glob.glob('templates/*'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             exts = os.path.splitext(base)
             if os.path.splitext(exts[0])[1] == '':
                 page = self._env.get_template(base).render(products=products,
                                                            categories=categories,
-                                                           info=json.load(open('info.json', 'r')))
+                                                           info=json.load(open('info.json')))
                 with open(f'site-deploy/{base}', 'w') as f:
                     f.write(page)
 
                 print(f'Deployed: {base}')
                 # self.deployer.add_page(base, page)
 
-        json.dump(products, open('tmp/products.json', 'w'), cls=ProductEncoder)
+        # self.deploy_repo.git.add(update=True)
+        # self.deploy_repo.index.commit("Deploy from CLI")
+        # self.deploy_repo.remote("origin").push()
 
     def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """

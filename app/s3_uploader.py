@@ -5,7 +5,7 @@ import zipfile
 import boto3
 
 
-class Deployer:
+class Uploader:
     def __init__(self, bucket_name=os.environ.get("BUCKET_NAME"),
                  lambda_bucket_name=os.environ.get("LAMBDA_BUCKET_NAME")):
         self.lambda_bucket_name = lambda_bucket_name

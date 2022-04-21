@@ -14,13 +14,13 @@
         Ваш адрес:
         <span id="address_text"></span>
 
-        <span class="material-icons close" id="close">
+        <span class="material-icons-outlined close" id="close_map_overlay">
             close
         </span>
     </div>
 
     <div class="map_container">
-        <div class="material-icons center-marker" id="place">
+        <div class="material-icons-outlined center-marker" id="place">
             place
         </div>
         <div id="map"></div>
@@ -28,67 +28,116 @@
 </div>
 
 <header>
-    <div class="title clickable">Shop</div>
-    <div class="address clickable" id="address">
-        <span class="material-icons" style="font-size: 28px">
+    <div class="header_main">
+        <div class="title clickable">Shop</div>
+        <div class="address clickable" id="address">
+        <span class="material-icons-outlined" style="font-size: 28px">
             place
         </span>
 
-        <span class="your_address">
+            <span class="your_address">
             Ваш адрес
         </span>
-    </div>
-    <nav class="right_panel">
-        <span class="item last-item clickable">
-            <span class="material-icons big">
-                search
+        </div>
+        <nav class="right_panel">
+            <span class="item last-item clickable">
+                <span class="material-icons-outlined big">
+                    search
+                </span>
+                Поиск
             </span>
-            Поиск
-        </span>
 
-        <span class="item clickable">
-            <span class="material-icons big">
+            <span class="item clickable" id="cart_button">
+                <span class="material-icons-outlined big">
+                    shopping_cart
+                </span>
+                Корзина
+            </span>
+
+            <span class="item first-item clickable" id="login_button">
+                <span class="material-icons-outlined big">
                 account_circle
+                </span>
+                Вход
             </span>
-            Войти
-        </span>
+        </nav>
+    </div>
 
-        <span class="item first-item clickable">
-            <span class="material-icons big">
-                shopping_cart
-            </span>
-            Корзина
-        </span>
-    </nav>
+    <div class="login_dialog" id="login_dialog">
+        <label>
+            <input type="tel" placeholder="Телефон" class="login_input">
+        </label>
+        <label>
+            <input type="password" class="login_input" placeholder="Пароль">
+        </label>
+
+        <input type="submit" class="submit-login-button" id="submit-login-button" value="Войти">
+    </div>
+
+    <div class="cart_overlay" id="cart_overlay">
+        <div class="cart_product">
+            <img class="cart_product_img" src="pizza.webp" alt="" loading="lazy"/>
+            <div class="cart_product_info">
+                <div class="cart_product_title">Пицца</div>
+                <div class="cart_product_detailed_info">
+                    <span class="product_description">
+                        Lorem ipsum sit amet
+                    </span>
+                    <div class="cart_product_count">
+                        <span id="cart_product_count_text"><span style="margin-right: 4px">x</span>1</span>
+                        <div class="controls">
+                            <div class="count_controls">
+                                <span class="material-icons-outlined" id="count_up">
+                                    keyboard_arrow_up
+                                </span>
+                                <span class="material-icons-outlined" id="count_down">
+                                    keyboard_arrow_down
+                                </span>
+                            </div>
+                            <span class="material-icons-outlined" id="delete_product">
+                                clear
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="cart_product_price">350.0 ₽</div>
+            </div>
+        </div>
+    </div>
 </header>
 
-<div class="chips" id="chips">
-    {% for category in categories %}
-        <div class="chip">
-            <span class="material-icons chip-icon">
+<main>
+    <div class="product_holder">
+        <div class="chips" id="chips">
+            {% for category in categories %}
+                <div class="chip">
+            <span class="material-icons-outlined chip-icon">
                 check
             </span>
-            {{ category }}
+                    {{ category }}
+                </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
 
-<div class="products" id="products">
-    {% for product in products %}
-        <div class="product">
-            <div class="product_img"><img src="{{ product.image_uri }}" alt="" width="300" height="150" loading="lazy"></div>
-            <div class="product_title">{{ product.title }}</div>
-            <div class="product_description">{{ product.description }}</div>
-            <div class="product_price">{{ product.price / 100 }} ₽</div>
+        <div class="products" id="products">
+            {% for product in products %}
+                <div class="product">
+                    <img class="product_img" src="{{ product.image_uri }}" alt="" loading="lazy"/>
+                    <div class="product_title">{{ product.title }}</div>
+                    <div class="product_description">{{ product.description }}</div>
+                    <div class="product_price">{{ product.price }} ₽</div>
+                </div>
+            {% endfor %}
         </div>
-    {% endfor %}
-</div>
+    </div>
+</main>
+
 <footer>
     <ul class="list">
         <li class="info_text">Контакты:</li>
 
         <li class="footer-icon-li">
-            <span class="material-icons footer-icon">
+            <span class="material-icons-outlined footer-icon">
                 phone
             </span>
             <div class="list_text">
@@ -97,7 +146,7 @@
             </div>
         </li>
         <li class="footer-icon-li">
-            <span class="material-icons footer-icon">
+            <span class="material-icons-outlined footer-icon">
                 email
             </span>
             <div class="list_text">
@@ -110,7 +159,7 @@
             </div>
         </li>
         <li class="footer-icon-li">
-            <span class="material-icons footer-icon">
+            <span class="material-icons-outlined footer-icon">
                 place
             </span>
             <div class="list_text">
