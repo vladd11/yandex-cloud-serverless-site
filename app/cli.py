@@ -3,6 +3,7 @@ import json
 import os
 
 import uuid
+from pathlib import Path
 
 from git import Repo
 from jinja2 import Environment
@@ -39,19 +40,22 @@ class Cli:
                 product.uid = str(uuid.UUID(bytes_le=product.uid))
 
         categories = self.db.get_categories()
+        info = json.load(open('info.json'))
 
-        for path in glob.glob('templates/*.*'):
+        for path in Path('templates').rglob('*.*'):
+            path = path.relative_to('templates')
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             exts = os.path.splitext(base)
             if os.path.splitext(exts[0])[1] == '':
-                page = self._env.get_template(base).render(products=products,
-                                                           categories=categories,
-                                                           info=json.load(open('info.json')))
-                with open(f'site-deploy/{base}', 'w') as f:
+                page = self._env.get_template(str(path)).render(products=products,
+                                                                categories=categories,
+                                                                info=info,
+                                                                theme=info['theme'])
+                with open(f'site-deploy/{path}', 'w') as f:
                     f.write(page)
 
-                print(f'Deployed: {base}')
+                print(f'Deployed: {path}')
                 # self.deployer.add_page(base, page)
 
         # self.deploy_repo.git.add(update=True)
