@@ -40,7 +40,7 @@ class Cli:
 
         categories = self.db.get_categories()
 
-        for path in glob.glob('templates/*'):
+        for path in glob.glob('templates/*.*'):
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
             base = os.path.basename(path)
             exts = os.path.splitext(base)
