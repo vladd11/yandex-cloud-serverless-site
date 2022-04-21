@@ -75,34 +75,7 @@
     </div>
 
     <div class="cart_overlay" id="cart_overlay">
-        <div class="cart_product">
-            <img class="cart_product_img" src="pizza.webp" alt="" loading="lazy"/>
-            <div class="cart_product_info">
-                <div class="cart_product_title">Пицца</div>
-                <div class="cart_product_detailed_info">
-                    <span class="product_description">
-                        Lorem ipsum sit amet
-                    </span>
-                    <div class="cart_product_count">
-                        <span id="cart_product_count_text"><span style="margin-right: 4px">x</span>1</span>
-                        <div class="controls">
-                            <div class="count_controls">
-                                <span class="material-icons-outlined" id="count_up">
-                                    keyboard_arrow_up
-                                </span>
-                                <span class="material-icons-outlined" id="count_down">
-                                    keyboard_arrow_down
-                                </span>
-                            </div>
-                            <span class="material-icons-outlined" id="delete_product">
-                                clear
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div class="cart_product_price">350.0 ₽</div>
-            </div>
-        </div>
+        В вашей корзине нет товаров.
     </div>
 </header>
 
@@ -121,11 +94,14 @@
 
         <div class="products" id="products">
             {% for product in products %}
-                <div class="product">
+                <div class="product" id="{{ product.uid }}">
                     <img class="product_img" src="{{ product.image_uri }}" alt="" loading="lazy"/>
                     <div class="product_title">{{ product.title }}</div>
                     <div class="product_description">{{ product.description }}</div>
                     <div class="product_price">{{ product.price }} ₽</div>
+                    <span class="material-icons-outlined add_to_cart">
+                        add_shopping_cart
+                    </span>
                 </div>
             {% endfor %}
         </div>
