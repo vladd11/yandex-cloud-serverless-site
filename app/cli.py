@@ -9,6 +9,7 @@ from git import Repo
 from jinja2 import Environment
 
 from app.db import Database
+from app.s3_uploader import Uploader
 from common.product import Product
 from common.user import User
 
@@ -116,7 +117,8 @@ class Cli:
         self.db.create_order(User(uuid.UUID(uid).bytes), products)
 
     def deploy_lambdas(self):
-        self.deployer.zip_lambdas()
+        print("\nDeploying...")
+        Uploader.deploy_lambdas()
 
     def create_tables(self):
         self.db.create_tables()

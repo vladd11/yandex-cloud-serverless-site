@@ -1,8 +1,4 @@
-from common.product import Product
-
-
-class OrderProduct(Product):
-    def __init__(self, title: str = None, description: str = None, price: float = None, uid: bytes = None, count: int = None):
-        super().__init__(title, description, price, uid)
+class OrderProduct:
+    def __init__(self, uid: bytes = None, count: int = None):
+        self.uid = uid
         self.count = count
-

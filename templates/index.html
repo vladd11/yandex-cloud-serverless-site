@@ -75,7 +75,9 @@
     </div>
 
     <div class="cart_overlay" id="cart_overlay">
-        В вашей корзине нет товаров.
+        <span id="empty_cart">В вашей корзине пока-что нет товаров.</span>
+
+        <button id="order_button">Оформить заказ</button>
     </div>
 </header>
 
@@ -93,13 +95,13 @@
         </div>
 
         <div class="products" id="products">
-            {% for product in products %}
-                <div class="product" id="{{ product.uid }}">
-                    <img class="product_img" src="{{ product.image_uri }}" alt="" loading="lazy"/>
-                    <div class="product_title">{{ product.title }}</div>
-                    <div class="product_description">{{ product.description }}</div>
-                    <div class="product_price">{{ product.price }} ₽</div>
-                    <span class="material-icons-outlined add_to_cart">
+            {% for i in range(products|length) %}
+                <div class="product">
+                    <img class="product_img" src="{{ products[i].image_uri }}" alt="" loading="lazy"/>
+                    <div class="product_title">{{ products[i].title }}</div>
+                    <div class="product_description">{{ products[i].description }}</div>
+                    <div class="product_price">{{ products[i].price }} ₽</div>
+                    <span class="material-icons-outlined add_to_cart" id="{{ i }}">
                         add_shopping_cart
                     </span>
                 </div>
