@@ -1,3 +1,5 @@
+import uuid
+
 from ydb import Session
 
 
@@ -37,11 +39,41 @@ class Queries:
 
         self.insert_order = session.prepare(
             '''
-            PRAGMA AnsiInForEmptyOrNullableItemsCollections;
-
             DECLARE $order_id AS String;
             DECLARE $user_id AS String;
-            DECLARE $products AS List<String>;
-
+            
             INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-            SELECT $order_id, false, false, $user_id, SUM(products.price) FROM products WHERE products.id IN $products;''')
+            SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+            
+            FROM products AS product
+            
+            INNER JOIN order_items AS order_item ON order_item.product_id==product.id
+            WHERE order_item.order_id==$order_id''')
+
+    @staticmethod
+    def generate_order_item_insert_query(products, order_uid):
+        ranges = range(len(products))
+
+        query = 'DECLARE $order_id AS String;\n'
+        query = query + ''.join(
+            f'''
+        DECLARE $a{i}_id AS String;
+        DECLARE $a{i}_product_id AS String;
+        DECLARE $a{i}_quantity AS Uint32;
+                ''' for i in ranges)
+        query += '''
+                INSERT INTO order_items(id, order_id, product_id, quantity)
+                VALUES '''
+        query += ''.join(f'($a{i}_id, $order_id, $a{i}_product_id, $a{i}_quantity),\n' for i in ranges)
+        query = query[:len(query) - 2]
+
+        order_items = [uuid.uuid4().bytes for _ in ranges]
+
+        values = {"$order_id": order_uid}
+        for index, product in enumerate(products):
+            values[f"$a{index}_id"] = order_items[index]
+            values[f"$a{index}_product_id"] = product.uid
+            values[f"$a{index}_quantity"] = product.count
+
+        return query, values
+
