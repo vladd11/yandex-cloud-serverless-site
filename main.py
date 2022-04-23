@@ -16,6 +16,6 @@ deployer = Uploader()
 
 
 if __name__ == '__main__':
-    Fire(Cli(db, env), name="Yandex Cloud serverless site")
+    Fire(Cli(db, env, deployer), name="Yandex Cloud serverless site")
 
 db.disconnect()

@@ -1,7 +1,10 @@
 import glob
+import json
 import os
+import random
 import subprocess
 import zipfile
+from json import JSONDecodeError
 
 import boto3
 
@@ -22,8 +25,7 @@ class Uploader:
     def add_page(self, page_name: str, page_body: str, storage_class='STANDARD'):
         self.s3.put_object(Bucket=self.bucket_name, Key=page_name, Body=page_body, StorageClass=storage_class)
 
-    @staticmethod
-    def deploy_lambdas():
+    def deploy_lambdas(self):
         with zipfile.ZipFile('main.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
             for file in glob.glob('functions/*') + glob.glob('common/*') + glob.glob('sms/*'):
                 if '__pycache__' in file:
@@ -36,8 +38,10 @@ class Uploader:
                 print(f'Added {file}')
 
         try:
+            function_id, secret_key = self.generate_enviroments()
+
             print(subprocess.check_output(
-                f'yc serverless function version create --function-id {os.environ.get("FUNCTION_ID")} --source-path main.zip ' +
+                f'yc serverless function version create --function-id {function_id} --source-path main.zip ' +
                 f'--runtime python39 --entrypoint functions.main.handler ' +
                 f'--service-account-id {os.environ.get("SERVICE_ACCOUNT_ID")} ' +
                 f'--environment ENDPOINT={os.environ.get("ENDPOINT")} ' +
@@ -48,3 +52,30 @@ class Uploader:
             print(f'\nNon-zero return code: {e.returncode}')
         else:
             print("Successfully deployed!")
+
+    def generate_enviroments(self):
+        if not os.path.exists('setup.json'):
+            file_descriptor = open('setup.json', 'w')
+            file = {}
+        else:
+            file_descriptor = open('setup.json', 'w+')
+            file = json.load(file_descriptor)
+
+        try:
+            function_id = file['function_id']
+        except (KeyError, JSONDecodeError):
+            output = subprocess.check_output('yc serverless function create', shell=True)
+            function_id = output[4:24].decode('utf-8')
+            file['function_id'] = function_id
+
+        try:
+            secret_key = file['secret_key']
+
+        except (KeyError, JSONDecodeError):
+            import string
+            secret_key = ''.join(
+                random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
+            file['secret_key'] = secret_key
+
+        json.dump(file, file_descriptor)
+        return function_id, secret_key

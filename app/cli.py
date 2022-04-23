@@ -26,10 +26,11 @@ class ProductEncoder(json.JSONEncoder):
 
 
 class Cli:
-    def __init__(self, db: Database, env: Environment):
+    def __init__(self, db: Database, env: Environment, uploader: Uploader):
         self.deploy_repo = Repo('site-deploy/')
         self._env = env
         self.db = db
+        self.uploader = uploader
 
     def deploy(self):
         """
@@ -118,7 +119,7 @@ class Cli:
 
     def deploy_lambdas(self):
         print("\nDeploying...")
-        Uploader.deploy_lambdas()
+        self.uploader.deploy_lambdas()
 
     def create_tables(self):
         self.db.create_tables()

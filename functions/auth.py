@@ -10,7 +10,7 @@ import ydb
 from jwt import PyJWT, InvalidSignatureError
 from ydb import PreconditionFailed
 
-from functions.exceptions import LoginIsNotUniqueException, WrongJWTTokenException
+from functions.exceptions import LoginIsNotUniqueException, WrongJWTTokenException, WrongCredentials
 from functions.lambda_queries import Queries
 
 jwt = PyJWT()
@@ -55,7 +55,7 @@ class Auth:
     def login(self, phone: str, password: str) -> str:
         uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, password)
         if not uid:
-            raise WrongJWTTokenException()
+            raise WrongCredentials()
 
         return jwt.encode(
             {

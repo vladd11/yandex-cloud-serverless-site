@@ -2,14 +2,13 @@ import json
 import os
 
 import ydb
-
 # It's in ./requirements.txt for functions
 # noinspection PyPackageRequirements
 from jsonrpc import dispatcher, JSONRPCResponseManager
 
-from functions.order_manager import OrderManager
 from functions.auth import Auth
 from functions.lambda_queries import Queries
+from functions.order_manager import OrderManager
 
 driver = ydb.Driver(endpoint=os.getenv('ENDPOINT'), database=os.getenv('DATABASE'))
 driver.wait(fail_fast=True, timeout=5)
@@ -30,7 +29,13 @@ dispatcher['register'] = auth.register
 def handler(event, context):
     return {
         'statusCode': 200,
-        'body': JSONRPCResponseManager.handle(event['body'], dispatcher).json
+        'body': JSONRPCResponseManager.handle(event['body'], dispatcher).json,
+        'headers': {"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Credentials": "true",
+                    "Access-Control-Allow-Methods": "POST",
+                    "Access-Control-Allow-Headers": "Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, "
+                                                    "Content-Type, Access-Control-Request-Method, "
+                                                    "Access-Control-Request-Headers",
+                    "Content-Type": "application/json"}
     }
 
 

@@ -47,7 +47,7 @@ class Queries:
             
             FROM products AS product
             
-            INNER JOIN order_items AS order_item ON order_item.product_id==product.id
+            INNER JOIN order_items AS order_item USING (id)
             WHERE order_item.order_id==$order_id''')
 
     @staticmethod
