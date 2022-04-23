@@ -3,14 +3,15 @@ import os
 import random
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import bcrypt
 import ydb
 from jwt import PyJWT, InvalidSignatureError
 from ydb import PreconditionFailed
+
+from functions.exceptions import LoginIsNotUniqueException, WrongJWTTokenException
 from functions.lambda_queries import Queries
-import sms
 
 jwt = PyJWT()
 
@@ -51,20 +52,18 @@ class Auth:
             if bcrypt.checkpw(password.encode('utf-8'), rows[0]['password']):
                 return result[0].rows[0]['id'].hex()
 
-    def login(self, phone: str, password: str) -> Dict[str, Any]:
+    def login(self, phone: str, password: str) -> str:
         uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, password)
         if not uid:
-            return {'statusCode': 401, 'body': ''}
+            raise WrongJWTTokenException()
 
-        return {
-            'statusCode': 200,
-            'body': jwt.encode(
-                {
-                    'id': uid,
-                    'phone': phone
-                },
-                self.SECRET_KEY,
-                algorithm="HS256")}
+        return jwt.encode(
+            {
+                'id': uid,
+                'phone': phone
+            },
+            self.SECRET_KEY,
+            algorithm="HS256")
 
     @staticmethod
     def register_query(session: ydb.Session, self, uid: bytes, phone: str, password: str, sms_code: str):
@@ -76,7 +75,7 @@ class Auth:
                                        '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
                                       commit_tx=True)
 
-    def register(self, phone: str, password: str) -> Dict[str, Any]:
+    def register(self, phone: str, password: str) -> str:
         uid = uuid.uuid4()
 
         try:
@@ -87,9 +86,6 @@ class Auth:
 
             if self.SMS_VERIFICATION_ENABLED:
                 self.sms.send_sms(phone, f'Your SMS code is: {sms_code}')
-        except PreconditionFailed as e:
-            return {'statusCode': 401}
-        return {
-            'statusCode': 200,
-            'body': jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256"),
-        }
+        except PreconditionFailed:
+            raise LoginIsNotUniqueException(phone)
+        return jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
