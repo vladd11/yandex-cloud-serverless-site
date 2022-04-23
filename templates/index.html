@@ -4,11 +4,10 @@
     <meta charset="UTF-8">
     <title>Shop | Главная</title>
 
-    <link rel="preload" as="font" href="fonts/MaterialIconsOutlined.woff2">
+    <link rel="stylesheet" href="c5b89f53ee3daa71511b.css">
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Example page of shop">
-
 </head>
 <body>
 
@@ -101,15 +100,15 @@
             {% for i in range(products|length) %}
                 <div class="product">
                     {% if i < 5 %}
-                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" />
+                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" width="300" height="150" />
                     {% else %}
-                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" loading="lazy"/>
+                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" loading="lazy" width="300" height="150"/>
                     {% endif %}
                     <div class="product_title">{{ products[i].title }}</div>
                     <div class="product_description">{{ products[i].description }}</div>
                     <div class="product_price">{{ products[i].price }} ₽</div>
                     <span class="material-icons-outlined add_to_cart" id="{{ i }}">
-                        add_shopping_cart
+                        &#xe854;
                     </span>
                 </div>
             {% endfor %}
