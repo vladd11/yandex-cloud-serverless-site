@@ -43,21 +43,21 @@
         <nav class="right_panel">
             <span class="item last-item clickable">
                 <span class="material-icons-outlined big">
-                    search
+                    &#xe8b6;
                 </span>
                 Поиск
             </span>
 
             <span class="item clickable" id="cart_button">
                 <span class="material-icons-outlined big">
-                    shopping_cart
+                    &#xe8cc;
                 </span>
                 Корзина
             </span>
 
             <span class="item first-item clickable" id="login_button">
                 <span class="material-icons-outlined big">
-                account_circle
+                    &#xe853;
                 </span>
                 Вход
             </span>
@@ -71,6 +71,8 @@
         <label>
             <input type="password" class="login_input" id="password_input" placeholder="Пароль">
         </label>
+
+        <span id="login_dialog_warn"></span>
 
         <input type="submit" class="submit-login-button" id="submit-login-button" value="Войти">
     </div>
@@ -88,7 +90,7 @@
             {% for category in categories %}
                 <div class="chip">
             <span class="material-icons-outlined chip-icon">
-                check
+                &#xe5ca;
             </span>
                     {{ category }}
                 </div>

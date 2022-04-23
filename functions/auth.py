@@ -7,7 +7,7 @@ from typing import Optional
 
 import bcrypt
 import ydb
-from jwt import PyJWT, InvalidSignatureError
+from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
 
 from functions.exceptions import LoginIsNotUniqueException, WrongJWTTokenException, WrongCredentials
@@ -36,7 +36,7 @@ class Auth:
         try:
             decoded = jwt.decode(token, self.SECRET_KEY, algorithms=["HS256"])
             return decoded['id']
-        except InvalidSignatureError:
+        except (InvalidSignatureError, DecodeError):
             return None
 
     @staticmethod
