@@ -97,7 +97,11 @@
         <div class="products" id="products">
             {% for i in range(products|length) %}
                 <div class="product">
-                    <img class="product_img" src="{{ products[i].image_uri }}" alt="" loading="lazy"/>
+                    {% if i < 5 %}
+                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" />
+                    {% else %}
+                        <img class="product_img" src="{{ products[i].image_uri }}" alt="" loading="lazy"/>
+                    {% endif %}
                     <div class="product_title">{{ products[i].title }}</div>
                     <div class="product_description">{{ products[i].description }}</div>
                     <div class="product_price">{{ products[i].price }} ₽</div>
