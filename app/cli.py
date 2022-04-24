@@ -31,7 +31,7 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
-    def deploy(self, *, deploy_to_cf_hook=None, deploy_to_git=False, deploy_lambdas=True):
+    def deploy(self, *, cf_hook=None, deploy_to_git=False):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -43,6 +43,8 @@ class Cli:
         categories = self.db.get_categories()
         info = json.load(open('info.json'))
 
+        function_id = self.uploader.deploy_lambdas()
+
         for path in Path('templates').rglob('*.*'):
             path = path.relative_to('templates')
             # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
@@ -52,24 +54,21 @@ class Cli:
                 page = self._env.get_template(str(path)).render(products=products,
                                                                 categories=categories,
                                                                 info=info,
-                                                                theme=info['theme'])
+                                                                theme=info['theme'],
+                                                                function_id=function_id)
                 with open(f'site-deploy/{path}', 'w') as f:
                     f.write(page)
 
                 print(f'Deployed: {path}')
                 # self.deployer.add_page(base, page)
 
-        if deploy_lambdas == 'true' or deploy_lambdas is True:
-            print('Deploying functions')
-            self.uploader.deploy_lambdas()
-
         if deploy_to_git == 'true':
             self.deploy_repo.git.add(update=True)
             self.deploy_repo.index.commit("Deploy from CLI")
             self.deploy_repo.remote("origin").push()
 
-        if deploy_to_cf_hook is not None:
-            requests.post(deploy_to_cf_hook)
+        if cf_hook is not None:
+            requests.post(cf_hook)
 
     def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """

@@ -17,7 +17,8 @@ const Info = {
         {% for category in categories %}
         "{{ category }}",
         {% endfor %}
-    ]
+    ],
+    function_id: "{{ function_id }}"
 };
 
 export default Info;

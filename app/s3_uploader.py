@@ -53,6 +53,7 @@ class Uploader:
             print(f'\nNon-zero return code: {e.returncode}')
         else:
             print("Successfully deployed!")
+            return function_id
 
     def install_function_if_needed(self):
         if not os.path.exists('setup.json'):
