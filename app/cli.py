@@ -31,7 +31,7 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
-    def deploy(self, *, cf_hook=None, deploy_to_git=False):
+    def deploy(self, *, cf_hook=None, deploy_to_git=False, deploy_functions=True):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -43,7 +43,10 @@ class Cli:
         categories = self.db.get_categories()
         info = json.load(open('info.json'))
 
-        function_id = self.uploader.deploy_lambdas()
+        if deploy_functions == 'true' or deploy_functions is True:
+            function_id = self.uploader.deploy_lambdas()
+        else:
+            function_id, secret_key = self.uploader.read_function()
 
         for path in Path('templates').rglob('*.*'):
             path = path.relative_to('templates')
