@@ -31,7 +31,7 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
-    def deploy(self, *, deploy_to_cf_hook=None, deploy_to_git=False):
+    def deploy(self, *, deploy_to_cf_hook=None, deploy_to_git=False, deploy_lambdas=True):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -58,6 +58,10 @@ class Cli:
 
                 print(f'Deployed: {path}')
                 # self.deployer.add_page(base, page)
+
+        if deploy_lambdas == 'true' or deploy_lambdas is True:
+            print('Deploying functions')
+            self.uploader.deploy_lambdas()
 
         if deploy_to_git == 'true':
             self.deploy_repo.git.add(update=True)
@@ -119,10 +123,6 @@ class Cli:
             products.append(product)
 
         self.db.create_order(User(uuid.UUID(uid).bytes), products)
-
-    def deploy_lambdas(self):
-        print("\nDeploying...")
-        self.uploader.deploy_lambdas()
 
     def create_tables(self):
         self.db.create_tables()
