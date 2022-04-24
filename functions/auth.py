@@ -3,14 +3,14 @@ import os
 import random
 import time
 import uuid
-from typing import Optional
+from typing import Optional, Dict, Any
 
 import bcrypt
 import ydb
 from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
 
-from functions.exceptions import LoginIsNotUniqueException, WrongJWTTokenException, WrongCredentials
+from functions.exceptions import LoginIsNotUniqueException, WrongCredentials
 from functions.lambda_queries import Queries
 
 jwt = PyJWT()
@@ -52,18 +52,21 @@ class Auth:
             if bcrypt.checkpw(password.encode('utf-8'), rows[0]['password']):
                 return result[0].rows[0]['id'].hex()
 
-    def login(self, phone: str, password: str) -> str:
+    def login(self, phone: str, password: str) -> Dict[str, Any]:
         uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, password)
         if not uid:
             raise WrongCredentials()
 
-        return jwt.encode(
-            {
-                'id': uid,
-                'phone': phone
-            },
-            self.SECRET_KEY,
-            algorithm="HS256")
+        return {
+            "token": jwt.encode(
+                {
+                    'id': uid,
+                    'phone': phone
+                },
+                self.SECRET_KEY,
+                algorithm="HS256"),
+            'phone': phone
+        }
 
     @staticmethod
     def register_query(session: ydb.Session, self, uid: bytes, phone: str, password: str, sms_code: str):

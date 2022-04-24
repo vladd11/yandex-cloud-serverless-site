@@ -11,7 +11,8 @@ import boto3
 
 class Uploader:
     def __init__(self, bucket_name=os.environ.get("BUCKET_NAME"),
-                 lambda_bucket_name=os.environ.get("LAMBDA_BUCKET_NAME")):
+                 lambda_bucket_name=os.environ.get("LAMBDA_BUCKET_NAME"), setup_file_path='setup.json'):
+        self.setup_file_path = setup_file_path
         self.lambda_bucket_name = lambda_bucket_name
         self.bucket_name = bucket_name
 
@@ -38,7 +39,7 @@ class Uploader:
                 print(f'Added {file}')
 
         try:
-            function_id, secret_key = self.generate_enviroments()
+            function_id, secret_key = self.install_function_if_needed()
 
             print(subprocess.check_output(
                 f'yc serverless function version create --function-id {function_id} --source-path main.zip ' +
@@ -53,29 +54,38 @@ class Uploader:
         else:
             print("Successfully deployed!")
 
-    def generate_enviroments(self):
+    def install_function_if_needed(self):
         if not os.path.exists('setup.json'):
-            file_descriptor = open('setup.json', 'w')
-            file = {}
+            return self.install_function()
         else:
-            file_descriptor = open('setup.json', 'w+')
-            file = json.load(file_descriptor)
+            return self.read_function()
 
-        try:
-            function_id = file['function_id']
-        except (KeyError, JSONDecodeError):
+    def install_function(self):
+        with open(self.setup_file_path, 'w') as descriptor:
+            file = {}
+
             output = subprocess.check_output('yc serverless function create', shell=True)
             function_id = output[4:24].decode('utf-8')
             file['function_id'] = function_id
 
-        try:
-            secret_key = file['secret_key']
-
-        except (KeyError, JSONDecodeError):
             import string
             secret_key = ''.join(
                 random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(32))
             file['secret_key'] = secret_key
 
-        json.dump(file, file_descriptor)
-        return function_id, secret_key
+            json.dump(file, descriptor)
+            return function_id, secret_key
+
+    def read_function(self):
+        file_descriptor = open(self.setup_file_path, 'r')
+
+        try:
+            file = json.load(file_descriptor)
+
+            function_id, secret_key = file['function_id'], file['secret_key']
+            file_descriptor.close()
+
+            return function_id, secret_key
+        except (KeyError, JSONDecodeError):
+            file_descriptor.close()
+            return self.install_function()

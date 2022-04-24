@@ -1,10 +1,9 @@
-import glob
 import json
 import os
-
 import uuid
 from pathlib import Path
 
+import requests
 from git import Repo
 from jinja2 import Environment
 
@@ -32,7 +31,7 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
-    def deploy(self):
+    def deploy(self, *, deploy_to_cf_hook=None, deploy_to_git=False):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -60,9 +59,13 @@ class Cli:
                 print(f'Deployed: {path}')
                 # self.deployer.add_page(base, page)
 
-        # self.deploy_repo.git.add(update=True)
-        # self.deploy_repo.index.commit("Deploy from CLI")
-        # self.deploy_repo.remote("origin").push()
+        if deploy_to_git == 'true':
+            self.deploy_repo.git.add(update=True)
+            self.deploy_repo.index.commit("Deploy from CLI")
+            self.deploy_repo.remote("origin").push()
+
+        if deploy_to_cf_hook is not None:
+            requests.post(deploy_to_cf_hook)
 
     def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """
