@@ -1,0 +1,1 @@
+Templates that should be generated for each row in table, like products.

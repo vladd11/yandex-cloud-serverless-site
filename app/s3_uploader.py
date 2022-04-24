@@ -6,25 +6,14 @@ import subprocess
 import zipfile
 from json import JSONDecodeError
 
-import boto3
+import transliterate
+from jinja2 import Environment
 
 
 class Uploader:
-    def __init__(self, bucket_name=os.environ.get("BUCKET_NAME"),
-                 lambda_bucket_name=os.environ.get("LAMBDA_BUCKET_NAME"), setup_file_path='setup.json'):
+    def __init__(self, env: Environment, setup_file_path='setup.json'):
+        self.env = env
         self.setup_file_path = setup_file_path
-        self.lambda_bucket_name = lambda_bucket_name
-        self.bucket_name = bucket_name
-
-        session = boto3.session.Session()
-        self.s3 = session.client(
-            service_name='s3',
-            endpoint_url='https://storage.yandexcloud.net'
-        )
-        """ :type : pyboto3.s3 """
-
-    def add_page(self, page_name: str, page_body: str, storage_class='STANDARD'):
-        self.s3.put_object(Bucket=self.bucket_name, Key=page_name, Body=page_body, StorageClass=storage_class)
 
     def deploy_lambdas(self):
         with zipfile.ZipFile('main.zip', 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -90,3 +79,26 @@ class Uploader:
         except (KeyError, JSONDecodeError):
             file_descriptor.close()
             return self.install_function()
+
+    def deploy_pages(self, products, categories, info, function_id):
+        for path in glob.glob('templates/*.*'):
+            path = os.path.basename(path)
+
+            # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
+            page = self.env.get_template(str(path)).render(products=products,
+                                                           categories=categories,
+                                                           info=info,
+                                                           theme=info['theme'],
+                                                           function_id=function_id)
+            with open(f'site-deploy/{path}', 'w') as f:
+                f.write(page)
+
+            print(f'Deployed: {path}')
+
+        for product in products:
+            page = self.env.get_template('repeating/product.html').render(product=product, info=info, title=product.title)
+            path = f'site-deploy/{transliterate.translit(product.title, "ru", reversed=True).replace(" ", "_")}.html'
+
+            with open(path, 'w') as f:
+                f.write(page)
+            print(f'Deployed: {path}')

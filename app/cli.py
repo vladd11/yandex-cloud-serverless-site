@@ -25,9 +25,8 @@ class ProductEncoder(json.JSONEncoder):
 
 
 class Cli:
-    def __init__(self, db: Database, env: Environment, uploader: Uploader):
+    def __init__(self, db: Database, uploader: Uploader):
         self.deploy_repo = Repo('site-deploy/')
-        self._env = env
         self.db = db
         self.uploader = uploader
 
@@ -48,22 +47,7 @@ class Cli:
         else:
             function_id, secret_key = self.uploader.read_function()
 
-        for path in Path('templates').rglob('*.*'):
-            path = path.relative_to('templates')
-            # Check that file doesn't have sub-extensions. It's need to prevent uploading of base template files
-            base = os.path.basename(path)
-            exts = os.path.splitext(base)
-            if os.path.splitext(exts[0])[1] == '':
-                page = self._env.get_template(str(path)).render(products=products,
-                                                                categories=categories,
-                                                                info=info,
-                                                                theme=info['theme'],
-                                                                function_id=function_id)
-                with open(f'site-deploy/{path}', 'w') as f:
-                    f.write(page)
-
-                print(f'Deployed: {path}')
-                # self.deployer.add_page(base, page)
+        self.uploader.deploy_pages(products, categories, info, function_id)
 
         if deploy_to_git == 'true':
             self.deploy_repo.git.add(update=True)
