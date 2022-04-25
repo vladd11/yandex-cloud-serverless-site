@@ -3,14 +3,14 @@ import os
 import random
 import time
 import uuid
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Tuple
 
 import bcrypt
 import ydb
 from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
 
-from functions.exceptions import LoginIsNotUniqueException, WrongCredentials
+from functions.exceptions import LoginIsNotUniqueException, WrongCredentials, WrongJWTTokenException
 from functions.lambda_queries import Queries
 
 jwt = PyJWT()
@@ -32,12 +32,14 @@ class Auth:
 
         self.SECRET_KEY = os.environ.get("SECRET_KEY")
 
-    def verify(self, token: str) -> Optional[str]:
+    def verify(self, token: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             decoded = jwt.decode(token, self.SECRET_KEY, algorithms=["HS256"])
-            return decoded['id']
-        except (InvalidSignatureError, DecodeError):
-            return None
+
+            context['user_uid'] = uuid.UUID(decoded['id']).bytes
+            return decoded
+        except (InvalidSignatureError, DecodeError) as e:
+            raise WrongJWTTokenException()
 
     @staticmethod
     def login_query(session: ydb.Session, self, phone: str, password: str) -> str:
@@ -50,17 +52,19 @@ class Auth:
         rows = result[0].rows
         if len(rows) != 0:
             if bcrypt.checkpw(password.encode('utf-8'), rows[0]['password']):
-                return result[0].rows[0]['id'].hex()
+                return result[0].rows[0]['id']
 
-    def login(self, phone: str, password: str) -> Dict[str, Any]:
+    def login(self, phone: str, password: str, context: Dict[str, Any]) -> Dict[str, Any]:
         uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, password)
         if not uid:
             raise WrongCredentials()
 
+        context['user_uid'] = uid
+
         return {
             "token": jwt.encode(
                 {
-                    'id': uid,
+                    'id': uid.hex(),
                     'phone': phone
                 },
                 self.SECRET_KEY,
@@ -78,7 +82,7 @@ class Auth:
                                        '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
                                       commit_tx=True)
 
-    def register(self, phone: str, password: str) -> str:
+    def register(self, phone: str, password: str, context: Dict[str, Any]) -> str:
         uid = uuid.uuid4()
 
         try:
@@ -86,6 +90,8 @@ class Auth:
 
             self.pool.retry_operation_sync(self.register_query, None, self, uid.bytes, phone, password,
                                            sms_code)
+
+            context['user_uid'] = uid.bytes
 
             if self.SMS_VERIFICATION_ENABLED:
                 self.sms.send_sms(phone, f'Your SMS code is: {sms_code}')

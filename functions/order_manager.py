@@ -6,7 +6,7 @@ from ydb import Session
 
 from common.order_product import OrderProduct
 from functions.auth import Auth
-from functions.exceptions import WrongJWTTokenException
+from functions.exceptions import WrongJWTTokenException, AuthIsRequired
 from functions.lambda_queries import Queries
 
 
@@ -26,12 +26,10 @@ class OrderManager:
         session.transaction().execute(self.queries.insert_order, {"$order_id": order_uid, "$user_id": user_uid},
                                       commit_tx=True)
 
-    def add_order(self, token: str, products: List[Dict[str, Any]], address: str):
-        user_uid = self.auth.verify(token)
+    def add_order(self, products: List[Dict[str, Any]], address: str, context: Dict[str, Any]):
+        user_uid = context.get('user_uid')
         if user_uid is None:
-            raise WrongJWTTokenException()
-        else:
-            user_uid = uuid.UUID(user_uid).bytes
+            raise AuthIsRequired()
 
         for index, product_dict in enumerate(products):
             # I don't know why it shows here
