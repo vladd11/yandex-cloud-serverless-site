@@ -4,4 +4,4 @@ yandexcloud
 bcrypt~=3.2.0
 requests~=2.27.1
 PyJWT==2.3.0
-json-rpc-stateful~=1.13.3
+json-rpc-stateful~=1.13.4

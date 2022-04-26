@@ -6,26 +6,25 @@ from ydb import Session
 class Queries:
     def __init__(self):
         self.add_user = None
-        self.select_password = None
+        self.select_smscode = None
         self.insert_order = None
         self.insert_order_items = None
 
     def prepare(self, session: Session):
         self.add_user = session.prepare('''
         DECLARE $id AS String;
-        DECLARE $password AS String;
         DECLARE $sms_code AS Uint32;
         DECLARE $sms_code_expiration AS Datetime;
         DECLARE $phone AS Utf8;
         
-        INSERT INTO users(id, password, phone, sms_code, sms_code_expiration)
-        VALUES ($id, $password, $phone, $sms_code, $sms_code_expiration);
+        INSERT INTO users(id, phone, sms_code, sms_code_expiration)
+        VALUES ($id, $phone, $sms_code, $sms_code_expiration);
         ''')
 
-        self.select_password = session.prepare('''
+        self.select_smscode = session.prepare('''
         DECLARE $phone AS Utf8;
         
-        SELECT id, password FROM users WHERE phone=$phone;''')
+        SELECT id, sms_code FROM users WHERE phone=$phone;''')
 
         self.insert_order_items = session.prepare(
             '''

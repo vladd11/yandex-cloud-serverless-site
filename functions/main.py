@@ -41,9 +41,11 @@ def handler(event, context):
     if event['httpMethod'] == 'OPTIONS':
         return {'statusCode': 200,
                 'headers': cors_headers}
+
     return {
         'statusCode': 200,
-        'body': JSONRPCResponseManager.handle(event['body'], dispatcher).json,
+        'body': JSONRPCResponseManager.handle(event['body'], dispatcher,
+                                              initial_context=event['requestContext']['identity']).json,
         'headers': cors_headers
     }
 

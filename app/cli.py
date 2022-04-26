@@ -30,7 +30,7 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
-    def deploy(self, *, cf_hook=None, deploy_to_git=False, deploy_functions=True):
+    def deploy(self, *, deploy_to_git=False, deploy_functions=True):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -53,9 +53,6 @@ class Cli:
             self.deploy_repo.git.add(update=True)
             self.deploy_repo.index.commit("Deploy from CLI")
             self.deploy_repo.remote("origin").push()
-
-        if cf_hook is not None:
-            requests.post(cf_hook)
 
     def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """

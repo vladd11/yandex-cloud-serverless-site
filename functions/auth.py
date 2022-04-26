@@ -3,9 +3,8 @@ import os
 import random
 import time
 import uuid
-from typing import Dict, Any, Tuple
+from typing import Dict, Any
 
-import bcrypt
 import ydb
 from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
@@ -21,7 +20,6 @@ class Auth:
         self.pool = pool
         self.queries = queries
 
-        self.SMS_VERIFICATION_ENABLED = bool(os.environ.get('SMS_VERIFICATION_ENABLED'))
         self.SMS_CODE_EXPIRATION_TIME = os.environ.get('SMS_CODE_EXPIRATION_TIME') or 600
 
         sms_code_length = os.environ.get('SMS_CODE_LENGTH') or 6
@@ -42,20 +40,20 @@ class Auth:
             raise WrongJWTTokenException()
 
     @staticmethod
-    def login_query(session: ydb.Session, self, phone: str, password: str) -> str:
+    def login_query(session: ydb.Session, self, phone: str, code: str) -> str:
         """
         Check password by user phone
         :return: UUID string
         """
-        result = session.transaction().execute(self.queries.select_password, {"$phone": phone})
+        result = session.transaction().execute(self.queries.select_smscode, {"$phone": phone})
 
         rows = result[0].rows
         if len(rows) != 0:
-            if bcrypt.checkpw(password.encode('utf-8'), rows[0]['password']):
+            if code == rows[0]['sms_code']:
                 return result[0].rows[0]['id']
 
-    def login(self, phone: str, password: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, password)
+    def login(self, phone: str, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
+        uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, code)
         if not uid:
             raise WrongCredentials()
 
@@ -73,28 +71,28 @@ class Auth:
         }
 
     @staticmethod
-    def register_query(session: ydb.Session, self, uid: bytes, phone: str, password: str, sms_code: str):
+    def register_query(session: ydb.Session, self, uid: bytes, phone: str, sms_code: str):
         session.transaction().execute(self.queries.add_user,
                                       {'$phone': phone,
-                                       '$password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()),
                                        '$id': uid,
                                        '$sms_code': sms_code,
                                        '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
                                       commit_tx=True)
 
-    def register(self, phone: str, password: str, context: Dict[str, Any]) -> str:
+    def register(self, phone: str, verify: bool, context: Dict[str, Any]) -> str:
         uid = uuid.uuid4()
 
         try:
             sms_code = random.randint(self.SMS_CODE_RANDMIN, self.SMS_CODE_RANDMAX)
 
-            self.pool.retry_operation_sync(self.register_query, None, self, uid.bytes, phone, password,
-                                           sms_code)
+            self.pool.retry_operation_sync(self.register_query, None, self, uid.bytes, phone, sms_code)
 
             context['user_uid'] = uid.bytes
 
-            if self.SMS_VERIFICATION_ENABLED:
-                self.sms.send_sms(phone, f'Your SMS code is: {sms_code}')
+            if verify:
+                self.sms.send_sms(phone,
+                                  f'Your SMS code is: {sms_code}',
+                                  context['sourceIp'])
         except PreconditionFailed:
             raise LoginIsNotUniqueException(phone)
         return jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
