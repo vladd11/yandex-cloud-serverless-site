@@ -1,10 +1,13 @@
+import base64
 import json
+import logging
 import os
+import sys
 
 import ydb
 # It's in ./requirements.txt for functions
 # noinspection PyPackageRequirements
-from jsonrpc import JSONRPCResponseManager, Dispatcher
+from jsonrpc import Dispatcher, JSONRPCResponseManager
 
 from functions.auth import Auth
 from functions.lambda_queries import Queries
@@ -28,7 +31,7 @@ pool.retry_operation_sync(queries.prepare)
 dispatcher = Dispatcher()
 
 auth = Auth(queries, pool)
-orderManager = OrderManager(pool, queries, auth)
+orderManager = OrderManager(pool, queries)
 
 dispatcher['verify'] = auth.verify
 dispatcher['login'] = auth.login
@@ -36,16 +39,27 @@ dispatcher['register'] = auth.register
 
 dispatcher['add_order'] = orderManager.add_order
 
+logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
 
 def handler(event, context):
+    identity = event["requestContext"]["identity"]
+
     if event['httpMethod'] == 'OPTIONS':
+        logging.info(f'Preflight request from {identity["sourceIp"]}, {identity["userAgent"]}')
         return {'statusCode': 200,
                 'headers': cors_headers}
 
+    body = event['body']
+
+    if event['isBase64Encoded']:
+        body = base64.b64decode(event['body'])
+
     return {
         'statusCode': 200,
-        'body': JSONRPCResponseManager.handle(event['body'], dispatcher,
-                                              initial_context=event['requestContext']['identity']).json,
+        'body': JSONRPCResponseManager.handle(body, dispatcher,
+                                              initial_context=identity).json,
         'headers': cors_headers
     }
 

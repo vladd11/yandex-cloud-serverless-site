@@ -30,6 +30,9 @@ class Cli:
         self.db = db
         self.uploader = uploader
 
+    def deploy_lambdas(self):
+        self.uploader.deploy_lambdas()
+
     def deploy(self, *, deploy_to_git=False, deploy_functions=True):
         """
         Deploy site to Yandex Cloud Object Storage

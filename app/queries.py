@@ -13,10 +13,10 @@ class Queries:
         
         INSERT INTO users(id, phone) VALUES ($id, $phone);''')
 
-        self.get_orders_by_id = session.prepare('''
+        """self.get_orders_by_id = session.prepare('''
         SELECT `order`.price
         FROM orders view idx_user_id as `order`
-        INNER JOIN users AS `user` ON `user`.id==`order`.user_id;''')
+        INNER JOIN users AS `user` ON `user`.id==`order`.user_id;''')"""
 
         self.update_product = session.prepare(
             '''

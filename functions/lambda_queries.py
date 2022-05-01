@@ -38,16 +38,16 @@ class Queries:
 
         self.insert_order = session.prepare(
             '''
-            DECLARE $order_id AS String;
-            DECLARE $user_id AS String;
-            
-            INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-            SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
-            
-            FROM products AS product
-            
-            INNER JOIN order_items AS order_item USING (id)
-            WHERE order_item.order_id==$order_id''')
+DECLARE $order_id AS String;
+DECLARE $user_id AS String;
+DECLARE $order_ids AS List<String>;
+
+INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
+SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+FROM order_items AS order_item
+
+INNER JOIN products AS product ON (order_item.product_id==product.id)
+WHERE order_item.id in $order_ids''')
 
     @staticmethod
     def generate_order_item_insert_query(products, order_uid):
@@ -74,5 +74,5 @@ class Queries:
             values[f"$a{index}_product_id"] = product.uid
             values[f"$a{index}_quantity"] = product.count
 
-        return query, values
+        return query, values, order_items
 

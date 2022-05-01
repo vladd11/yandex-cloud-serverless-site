@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 import random
 import time
@@ -9,10 +10,29 @@ import ydb
 from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
 
-from functions.exceptions import LoginIsNotUniqueException, WrongCredentials, WrongJWTTokenException
+from functions.exceptions import LoginIsNotUniqueException, WrongCredentials, WrongJWTTokenException, AuthIsRequired
 from functions.lambda_queries import Queries
 
 jwt = PyJWT()
+
+
+def login_required(f):
+    def wrapper(*args, **kwargs):
+        user_uid = kwargs['context'].get('user_uid')
+        if user_uid is None:
+            raise AuthIsRequired()
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
+def loggable(func):
+    def wrapper(*args, **kwargs):
+        context = kwargs['context']
+        logging.info(f'{func.__name__} is called from {context["sourceIp"]}, {context["userAgent"]}')
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 class Auth:
@@ -30,6 +50,7 @@ class Auth:
 
         self.SECRET_KEY = os.environ.get("SECRET_KEY")
 
+    @loggable
     def verify(self, token: str, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
             decoded = jwt.decode(token, self.SECRET_KEY, algorithms=["HS256"])
@@ -52,6 +73,7 @@ class Auth:
             if code == rows[0]['sms_code']:
                 return result[0].rows[0]['id']
 
+    @loggable
     def login(self, phone: str, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
         uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, code)
         if not uid:
@@ -79,6 +101,7 @@ class Auth:
                                        '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
                                       commit_tx=True)
 
+    @loggable
     def register(self, phone: str, verify: bool, context: Dict[str, Any]) -> str:
         uid = uuid.uuid4()
 
@@ -93,6 +116,7 @@ class Auth:
                 self.sms.send_sms(phone,
                                   f'Your SMS code is: {sms_code}',
                                   context['sourceIp'])
+
         except PreconditionFailed:
             raise LoginIsNotUniqueException(phone)
         return jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
