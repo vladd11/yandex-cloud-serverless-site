@@ -39,9 +39,6 @@ dispatcher['register'] = auth.register
 
 dispatcher['add_order'] = orderManager.add_order
 
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
 
 def handler(event, context):
     identity = event["requestContext"]["identity"]
