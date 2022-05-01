@@ -25,8 +25,8 @@ class OrderManager:
                                       {"$order_id": order_uid, "$user_id": user_uid, "$order_ids": order_item_uids},
                                       commit_tx=True)
 
-    @loggable
     @login_required
+    @loggable
     def add_order(self, products: List[Dict[str, Any]], address: str, context: Dict[str, Any]):
         for index, product_dict in enumerate(products):
             # I don't know why it shows here

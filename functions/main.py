@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import os
-import sys
 
 import ydb
 # It's in ./requirements.txt for functions
@@ -38,6 +37,8 @@ dispatcher['login'] = auth.login
 dispatcher['register'] = auth.register
 
 dispatcher['add_order'] = orderManager.add_order
+
+logging.getLogger().setLevel(logging.INFO)
 
 
 def handler(event, context):
