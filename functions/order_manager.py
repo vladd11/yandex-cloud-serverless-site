@@ -6,6 +6,7 @@ from ydb import Session
 
 from common.order_product import OrderProduct
 from functions.auth import login_required, loggable
+from functions.exceptions import CartIsEmpty
 from functions.lambda_queries import Queries
 
 
@@ -25,9 +26,13 @@ class OrderManager:
                                       {"$order_id": order_uid, "$user_id": user_uid, "$order_ids": order_item_uids},
                                       commit_tx=True)
 
+    # noinspection PyPep8Naming
     @login_required
     @loggable
-    def add_order(self, products: List[Dict[str, Any]], address: str, context: Dict[str, Any]):
+    def add_order(self, products: List[Dict[str, Any]], address: str, paymentMethod: str, context: Dict[str, Any]):
+        if len(products) == 0:
+            raise CartIsEmpty()
+
         for index, product_dict in enumerate(products):
             # I don't know why it shows here
             # noinspection PyTypeChecker

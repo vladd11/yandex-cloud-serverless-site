@@ -1,0 +1,21 @@
+[
+  {
+    "jsonrpc": "2.0",
+    "id": 0,
+    "method": "check_code",
+    "params": {
+      "phone": "+7",
+      "code": 100000
+    }
+  },
+
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "add_order",
+    "params": {
+      "address": "",
+      "products": []
+    }
+  }
+]

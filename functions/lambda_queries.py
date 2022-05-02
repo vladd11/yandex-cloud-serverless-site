@@ -5,6 +5,7 @@ from ydb import Session
 
 class Queries:
     def __init__(self):
+        self.update_code = None
         self.add_user = None
         self.select_smscode = None
         self.insert_order = None
@@ -12,19 +13,19 @@ class Queries:
 
     def prepare(self, session: Session):
         self.add_user = session.prepare('''
-        DECLARE $id AS String;
-        DECLARE $sms_code AS Uint32;
-        DECLARE $sms_code_expiration AS Datetime;
-        DECLARE $phone AS Utf8;
+DECLARE $id AS String;
+DECLARE $sms_code AS Uint32;
+DECLARE $sms_code_expiration AS Datetime;
+DECLARE $phone AS Utf8;
         
-        INSERT INTO users(id, phone, sms_code, sms_code_expiration)
-        VALUES ($id, $phone, $sms_code, $sms_code_expiration);
+INSERT INTO users(id, phone, sms_code, sms_code_expiration)
+VALUES ($id, $phone, $sms_code, $sms_code_expiration);
         ''')
 
         self.select_smscode = session.prepare('''
         DECLARE $phone AS Utf8;
         
-        SELECT id, sms_code FROM users WHERE phone=$phone;''')
+        SELECT id, sms_code, sms_code_expiration, verified FROM users WHERE phone=$phone;''')
 
         self.insert_order_items = session.prepare(
             '''
@@ -47,7 +48,17 @@ SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.pric
 FROM order_items AS order_item
 
 INNER JOIN products AS product ON (order_item.product_id==product.id)
-WHERE order_item.id in $order_ids''')
+WHERE order_item.id in $order_ids;''')
+
+        self.update_code = session.prepare('''
+        DECLARE $phone AS Utf8;
+        DECLARE $sms_code AS Uint32;
+        DECLARE $sms_code_expiration AS Datetime;
+        
+        UPDATE users 
+        SET sms_code=$sms_code, sms_code_expiration=$sms_code_expiration
+        WHERE phone=$phone;
+        ''')
 
     @staticmethod
     def generate_order_item_insert_query(products, order_uid):
@@ -75,4 +86,3 @@ WHERE order_item.id in $order_ids''')
             values[f"$a{index}_quantity"] = product.count
 
         return query, values, order_items
-

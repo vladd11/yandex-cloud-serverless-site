@@ -23,14 +23,13 @@ class ProductEncoder(json.JSONEncoder):
 
 class Cli:
     def __init__(self, db: Database, uploader: Uploader):
-        self.deploy_repo = Repo('site-deploy/')
         self.db = db
         self.uploader = uploader
 
     def deploy_lambdas(self):
         self.uploader.deploy_lambdas()
 
-    def deploy(self, *, deploy_to_git=False, deploy_functions=True):
+    def deploy(self, *, deploy_functions=True):
         """
         Deploy site to Yandex Cloud Object Storage
         """
@@ -48,11 +47,6 @@ class Cli:
             function_id, secret_key = self.uploader.read_function()
 
         # self.uploader.deploy_pages(products, categories, info, function_id)
-
-        if deploy_to_git == 'true':
-            self.deploy_repo.git.add(update=True)
-            self.deploy_repo.index.commit("Deploy from CLI")
-            self.deploy_repo.remote("origin").push()
 
     def add_product(self, title: str, description: str, price: float, image_uri: str, category: str):
         """

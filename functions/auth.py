@@ -10,7 +10,8 @@ import ydb
 from jwt import PyJWT, InvalidSignatureError, DecodeError
 from ydb import PreconditionFailed
 
-from functions.exceptions import LoginIsNotUniqueException, WrongCredentials, WrongJWTTokenException, AuthIsRequired
+from functions.exceptions import WrongJWTTokenException, AuthIsRequired, \
+    WrongSMSCode, SMSCodeExpired, PhoneAlreadyInUse
 from functions.lambda_queries import Queries
 
 jwt = PyJWT()
@@ -61,39 +62,57 @@ class Auth:
             raise WrongJWTTokenException()
 
     @staticmethod
-    def login_query(session: ydb.Session, self, phone: str, code: str) -> str:
-        """
-        Check password by user phone
-        :return: UUID string
-        """
+    def send_code_query(session: ydb.Session, self, phone: str, code: int):
+        session.transaction().execute(self.queries.update_code,
+                                      {'$phone': phone,
+                                       '$sms_code': code,
+                                       '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
+                                      commit_tx=True)
+
+    @loggable
+    def send_code(self, phone: str, context: Dict[str, Any]):
+        code = random.randint(self.SMS_CODE_RANDMIN, self.SMS_CODE_RANDMAX)
+
+        self.pool.retry_operation_sync(self.send_code_query, None, self, phone, code)
+        self.sms.send_sms(phone,
+                          f'Your SMS code is: {code}',
+                          context['sourceIp'])
+
+    @staticmethod
+    def check_code_query(session: ydb.Session, self, code: int, phone: str):
         result = session.transaction().execute(self.queries.select_smscode, {"$phone": phone})
 
         rows = result[0].rows
         if len(rows) != 0:
             if code == rows[0]['sms_code']:
-                return result[0].rows[0]['id']
+                if time.time() < rows[0]['sms_code_expiration']:
+                    return result[0].rows[0]['id'], result[0].rows[0]['verified']
+                else:
+                    raise SMSCodeExpired()
+
+        raise WrongSMSCode()
 
     @loggable
-    def login(self, phone: str, code: str, context: Dict[str, Any]) -> Dict[str, Any]:
-        uid = self.pool.retry_operation_sync(self.login_query, None, self, phone, code)
-        if not uid:
-            raise WrongCredentials()
+    def check_code(self, phone: str, code: int, context: Dict[str, Any]):
+        if self.SMS_CODE_RANDMIN <= code <= self.SMS_CODE_RANDMAX:
+            uid, verify = self.pool.retry_operation_sync(self.check_code_query, None, self, code, phone)
 
-        context['user_uid'] = uid
+            context['user_uid'] = uid
 
-        return {
-            "token": jwt.encode(
-                {
-                    'id': uid.hex(),
-                    'phone': phone
-                },
-                self.SECRET_KEY,
-                algorithm="HS256"),
-            'phone': phone
-        }
+            return {
+                "token": jwt.encode(
+                    {
+                        'id': uid.hex(),
+                        'phone': phone
+                    },
+                    self.SECRET_KEY,
+                    algorithm="HS256")
+            }
+        else:
+            raise WrongSMSCode()
 
     @staticmethod
-    def register_query(session: ydb.Session, self, uid: bytes, phone: str, sms_code: str):
+    def login_query(session: ydb.Session, self, uid: bytes, phone: str, sms_code: int):
         session.transaction().execute(self.queries.add_user,
                                       {'$phone': phone,
                                        '$id': uid,
@@ -102,21 +121,22 @@ class Auth:
                                       commit_tx=True)
 
     @loggable
-    def register(self, phone: str, verify: bool, context: Dict[str, Any]) -> str:
-        uid = uuid.uuid4()
-
+    def login(self, phone: str, verify: bool, context: Dict[str, Any]) -> Dict[str, Any]:
         try:
+            uid = uuid.uuid4()
+
             sms_code = random.randint(self.SMS_CODE_RANDMIN, self.SMS_CODE_RANDMAX)
 
-            self.pool.retry_operation_sync(self.register_query, None, self, uid.bytes, phone, sms_code)
+            self.pool.retry_operation_sync(self.login_query, None, self, uid.bytes, phone, sms_code)
 
             context['user_uid'] = uid.bytes
 
             if verify:
-                self.sms.send_sms(phone,
-                                  f'Your SMS code is: {sms_code}',
-                                  context['sourceIp'])
+                self.send_code(phone, context)
 
+            return {
+                "token": jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
+            }
         except PreconditionFailed:
-            raise LoginIsNotUniqueException(phone)
-        return jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
+            self.send_code(phone, context)
+            raise PhoneAlreadyInUse()

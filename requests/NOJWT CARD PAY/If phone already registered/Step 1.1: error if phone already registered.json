@@ -1,0 +1,19 @@
+[
+  {
+    "error": {
+      "code": 1005,
+      "message": "Phone already in use"
+    },
+    "id": 0,
+    "jsonrpc": "2.0"
+  },
+
+  {
+    "error": {
+      "code": 1003,
+      "message": "You should auth to call this function"
+    },
+    "id": 1,
+    "jsonrpc": "2.0"
+  }
+]

@@ -33,8 +33,9 @@ auth = Auth(queries, pool)
 orderManager = OrderManager(pool, queries)
 
 dispatcher['verify'] = auth.verify
+dispatcher['check_code'] = auth.check_code
 dispatcher['login'] = auth.login
-dispatcher['register'] = auth.register
+dispatcher['send_code'] = auth.send_code
 
 dispatcher['add_order'] = orderManager.add_order
 
