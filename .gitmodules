@@ -1,3 +1,6 @@
 [submodule "gatsby"]
 	path = gatsby
 	url = git@github.com:vladd11/gatsby-material-e-commerce.git
+[submodule "gatsby-material-e-commerce"]
+	path = gatsby-material-e-commerce
+	url = git@github.com:vladd11/gatsby-material-e-commerce.git
