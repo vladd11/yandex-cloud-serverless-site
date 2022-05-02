@@ -60,7 +60,3 @@ def handler(event, context):
                                               initial_context=identity).json,
         'headers': cors_headers
     }
-
-
-if __name__ == '__main__':
-    print(handler(json.load(open('test_request.json')), None))

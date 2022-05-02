@@ -1,16 +1,13 @@
 import json
-import os
 import uuid
-from pathlib import Path
 
-import requests
 from git import Repo
-from jinja2 import Environment
 
 from app.db import Database
 from app.s3_uploader import Uploader
 from common.product import Product
 from common.user import User
+from functions.main import handler
 
 
 class ProductEncoder(json.JSONEncoder):
@@ -50,7 +47,7 @@ class Cli:
         else:
             function_id, secret_key = self.uploader.read_function()
 
-        self.uploader.deploy_pages(products, categories, info, function_id)
+        # self.uploader.deploy_pages(products, categories, info, function_id)
 
         if deploy_to_git == 'true':
             self.deploy_repo.git.add(update=True)
@@ -112,3 +109,6 @@ class Cli:
 
     def create_tables(self):
         self.db.create_tables()
+
+    def test_lambda(self):
+        print(handler(json.load(open('test_request.json')), None))
