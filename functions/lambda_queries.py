@@ -53,13 +53,8 @@ VALUES ($id, $phone, $sms_code, $sms_code_expiration);''')
     def select_smscode(self, session: Session):
         if not self._select_smscode:
             self._select_smscode = session.prepare('''
-DECLARE $id AS String;
-DECLARE $sms_code AS Uint32;
-DECLARE $sms_code_expiration AS Datetime;
 DECLARE $phone AS Utf8;
-
-INSERT INTO users(id, phone, sms_code, sms_code_expiration)
-VALUES ($id, $phone, $sms_code, $sms_code_expiration);''')
+SELECT id, sms_code, sms_code_expiration, verified FROM users WHERE phone=$phone;''')
 
         return self._select_smscode
 
