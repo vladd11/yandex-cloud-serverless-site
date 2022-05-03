@@ -25,7 +25,6 @@ driver.wait(fail_fast=True, timeout=5)
 pool = ydb.SessionPool(driver)
 
 queries = Queries()
-pool.retry_operation_sync(queries.prepare)
 
 dispatcher = Dispatcher()
 

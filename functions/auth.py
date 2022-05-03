@@ -28,6 +28,11 @@ def login_required(f):
 
 
 def loggable(func):
+    """
+    Decorator function that will record function calls
+    IMPORTANT: provide context as keyword argument
+    """
+
     def wrapper(*args, **kwargs):
         context = kwargs['context']
         logging.info(f'{func.__name__} is called from {context["sourceIp"]}, {context["userAgent"]}')
@@ -63,7 +68,7 @@ class Auth:
 
     @staticmethod
     def send_code_query(session: ydb.Session, self, phone: str, code: int):
-        session.transaction().execute(self.queries.update_code,
+        session.transaction().execute(self.queries.update_code(session),
                                       {'$phone': phone,
                                        '$sms_code': code,
                                        '$sms_code_expiration': int(time.time()) + self.SMS_CODE_EXPIRATION_TIME},
@@ -80,7 +85,7 @@ class Auth:
 
     @staticmethod
     def check_code_query(session: ydb.Session, self, code: int, phone: str):
-        result = session.transaction().execute(self.queries.select_smscode, {"$phone": phone})
+        result = session.transaction().execute(self.queries.select_smscode(session), {"$phone": phone})
 
         rows = result[0].rows
         if len(rows) != 0:
@@ -113,7 +118,7 @@ class Auth:
 
     @staticmethod
     def login_query(session: ydb.Session, self, uid: bytes, phone: str, sms_code: int):
-        session.transaction().execute(self.queries.add_user,
+        session.transaction().execute(self.queries.add_user(session),
                                       {'$phone': phone,
                                        '$id': uid,
                                        '$sms_code': sms_code,
@@ -138,5 +143,5 @@ class Auth:
                 "token": jwt.encode({'id': str(uid), 'phone': phone}, self.SECRET_KEY, algorithm="HS256")
             }
         except PreconditionFailed:
-            self.send_code(phone, context)
+            self.send_code(phone, context=context)
             raise PhoneAlreadyInUse()

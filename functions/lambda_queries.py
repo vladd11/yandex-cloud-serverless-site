@@ -5,60 +5,75 @@ from ydb import Session
 
 class Queries:
     def __init__(self):
-        self.update_code = None
-        self.add_user = None
-        self.select_smscode = None
-        self.insert_order = None
-        self.insert_order_items = None
+        self._update_code = None
+        self._add_user = None
+        self._select_smscode = None
+        self._insert_order = None
+        self._insert_order_items = None
 
-    def prepare(self, session: Session):
-        self.add_user = session.prepare('''
+    def insert_order(self, session: Session):
+        if not self._insert_order:
+            self._insert_order = session.prepare(
+                '''
+    DECLARE $order_id AS String;
+    DECLARE $user_id AS String;
+    DECLARE $order_ids AS List<String>;
+    INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
+    SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+    FROM order_items AS order_item
+    INNER JOIN products AS product ON (order_item.product_id==product.id)
+    WHERE order_item.id in $order_ids;''')
+        return self._insert_order
+
+    def add_user(self, session: Session):
+        if not self._add_user:
+            self._add_user = session.prepare('''
 DECLARE $id AS String;
 DECLARE $sms_code AS Uint32;
 DECLARE $sms_code_expiration AS Datetime;
 DECLARE $phone AS Utf8;
-        
+
 INSERT INTO users(id, phone, sms_code, sms_code_expiration)
-VALUES ($id, $phone, $sms_code, $sms_code_expiration);
-        ''')
+VALUES ($id, $phone, $sms_code, $sms_code_expiration);''')
+        return self._add_user
 
-        self.select_smscode = session.prepare('''
-        DECLARE $phone AS Utf8;
-        
-        SELECT id, sms_code, sms_code_expiration, verified FROM users WHERE phone=$phone;''')
+    def insert_order_items(self, session: Session):
+        if not self._insert_order_items:
+            self._insert_order_items = session.prepare(
+                '''
+                DECLARE $order_item_id AS String;
+                DECLARE $order_id AS String;
+                DECLARE $product_id AS String;
 
-        self.insert_order_items = session.prepare(
-            '''
-            DECLARE $order_item_id AS String;
-            DECLARE $order_id AS String;
-            DECLARE $product_id AS String;
-            
-            INSERT INTO order_items(id, order_id, product_id) 
-            VALUES ($order_item_id, $order_id, $product_id);'''
-        )
+                INSERT INTO order_items(id, order_id, product_id) 
+                VALUES ($order_item_id, $order_id, $product_id);'''
+            )
+        return self._insert_order_items
 
-        self.insert_order = session.prepare(
-            '''
-DECLARE $order_id AS String;
-DECLARE $user_id AS String;
-DECLARE $order_ids AS List<String>;
+    def select_smscode(self, session: Session):
+        if not self._select_smscode:
+            self._select_smscode = session.prepare('''
+DECLARE $id AS String;
+DECLARE $sms_code AS Uint32;
+DECLARE $sms_code_expiration AS Datetime;
+DECLARE $phone AS Utf8;
 
-INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
-FROM order_items AS order_item
+INSERT INTO users(id, phone, sms_code, sms_code_expiration)
+VALUES ($id, $phone, $sms_code, $sms_code_expiration);''')
 
-INNER JOIN products AS product ON (order_item.product_id==product.id)
-WHERE order_item.id in $order_ids;''')
+        return self._select_smscode
 
-        self.update_code = session.prepare('''
-        DECLARE $phone AS Utf8;
-        DECLARE $sms_code AS Uint32;
-        DECLARE $sms_code_expiration AS Datetime;
-        
-        UPDATE users 
-        SET sms_code=$sms_code, sms_code_expiration=$sms_code_expiration
-        WHERE phone=$phone;
-        ''')
+    def update_code(self, session: Session):
+        if not self._update_code:
+            self._update_code = session.prepare('''
+                DECLARE $phone AS Utf8;
+                DECLARE $sms_code AS Uint32;
+                DECLARE $sms_code_expiration AS Datetime;
+
+                UPDATE users 
+                SET sms_code=$sms_code, sms_code_expiration=$sms_code_expiration
+                WHERE phone=$phone;''')
+        return self._update_code
 
     @staticmethod
     def generate_order_item_insert_query(products, order_uid):
