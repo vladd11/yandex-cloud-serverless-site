@@ -64,6 +64,6 @@
     "requestTime": "22/Apr/2022:08:32:15 +0000",
     "requestTimeEpoch": 1650616335
   },
-  "body": "[{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"login\",\"params\":{\"phone\":\"+7\",\"verify\":false}},{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"add_order\",\"params\":{\"products\":[{\"id\":\"5eaba1cdd585446eaa7db06a3078e961\",\"count\":1}],\"paymentMethod\":\"qwe\",\"address\":\"cash\"}}]",
+  "body": "[{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"login\",\"params\":{\"phone\":\"7\",\"verify\":false}},{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"add_order\",\"params\":{\"products\":[{\"id\":\"5eaba1cdd585446eaa7db06a3078e961\",\"count\":1}],\"paymentMethod\":\"qwe\",\"address\":\"cash\"}}]",
   "isBase64Encoded": false
 }

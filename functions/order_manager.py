@@ -1,3 +1,4 @@
+import time
 import uuid
 from typing import List, Dict, Any
 
@@ -22,7 +23,7 @@ class OrderManager:
         insert_query, values, order_item_uids = self.queries.generate_order_item_insert_query(products, order_uid)
         session.transaction().execute(session.prepare(insert_query), values, commit_tx=True)
 
-        session.transaction().execute(self.queries.insert_order,
+        session.transaction().execute(self.queries.insert_order(session),
                                       {"$order_id": order_uid, "$user_id": user_uid, "$order_ids": order_item_uids},
                                       commit_tx=True)
 
