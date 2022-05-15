@@ -7,7 +7,8 @@
     "ts-node": "^10.7.0"
   },
   "scripts": {
-    "run": "node main.ts"
+    "run": "node main.ts",
+    "build": "node build.js"
   },
   "dependencies": {
     "jsonwebtoken": "^8.5.1",
