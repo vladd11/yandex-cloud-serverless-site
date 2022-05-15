@@ -18,7 +18,7 @@ jobs:
               folder-id: ${{ secrets.FOLDER_ID }}" > /home/runner/.config/yandex-cloud/config.yaml
       - run: >
           /home/runner/yandex-cloud/bin/yc serverless function version create
-          --function-id ${{ secrets.function_id }}
+          --function-id ${{ secrets.FUNCTION_ID }}
           --source-path nodejs/
           --runtime nodejs16 --entrypoint index.handler
           --service-account-id ${{ secrets.SERVICE_ACCOUNT_ID }}
