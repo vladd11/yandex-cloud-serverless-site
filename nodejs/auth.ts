@@ -6,9 +6,15 @@ import {sign} from "jsonwebtoken";
 import {TableClient} from "ydb-sdk/build/table";
 
 import Queries from "./queries";
+import {PreconditionFailed} from "ydb-sdk/build/errors";
 
 function loggable(methodName: string, context: BaseContext) {
     console.log(`${methodName} was called from ${context.sourceIp} ${context.userAgent}`)
+}
+
+class PhoneAlreadyInUse implements Error {
+    message: string = "Phone already in use";
+    name: string = "PhoneAlreadyInUse";
 }
 
 /**
@@ -75,20 +81,25 @@ export namespace Auth {
     export async function login(client: TableClient, queries: Queries, phone: string, verify: boolean, context: BaseContext): Promise<LoginOutput> {
         loggable("login", context);
 
-        const uid = crypto.randomBytes(16)
+        try {
+            const uid = crypto.randomBytes(16)
 
-        const sms_code = crypto.randomInt(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
+            const sms_code = crypto.randomInt(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
 
-        await client.withSession(async (session) => {
-            await session.executeQuery(await queries.addUser(session), createLoginParams(phone, uid, sms_code))
-        })
+            await client.withSession(async (session) => {
+                await session.executeQuery(await queries.addUser(session), createLoginParams(phone, uid, sms_code))
+            })
 
-        context.user_uid = uid
+            context.user_uid = uid
 
-        send_code(client, queries, phone, context)
-
-        return {
-            token: sign({id: uid.toString('hex'), 'phone': phone}, SECRET_KEY)
+            return {
+                token: sign({id: uid.toString('hex'), 'phone': phone}, SECRET_KEY)
+            }
+        } catch (e) {
+            if(e instanceof PreconditionFailed) {
+                await send_code(client, queries, phone, context)
+                throw new PhoneAlreadyInUse();
+            }
         }
     }
 
@@ -107,7 +118,7 @@ export namespace Auth {
                 }
             },
             '$sms_code_expiration': {
-                type: Types.TIMESTAMP, // Timestamp is 32-bit unsigned integer
+                type: Types.DATETIME, // Datetime is 32-bit unsigned integer
                 value: {
                     uint32Value: Date.now() + SMS_CODE_EXPIRATION_TIME
                 }

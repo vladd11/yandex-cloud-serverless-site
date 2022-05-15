@@ -26,15 +26,22 @@ async function connect() {
 }
 
 module.exports.handler = async function (event: Event, context) {
-    if(!isReady) await connect();
+    if (!isReady) await connect();
 
-    if(event.isBase64Encoded) {
+    if (event.isBase64Encoded) {
         event.body = Buffer.from(event.body, "base64").toString('utf8')
     }
 
-    return {
-        statusCode: 200,
-        body: JSON.stringify(Auth.login(driver.tableClient, queries, "", false, event.requestContext.identity))
+    try {
+        return {
+            statusCode: 200,
+            body: JSON.stringify(await Auth.login(driver.tableClient, queries, "", false, event.requestContext.identity))
+        }
+    } catch (e) {
+        return {
+            statusCode: 200,
+            body: JSON.stringify(e)
+        }
     }
 }
 
