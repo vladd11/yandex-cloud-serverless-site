@@ -1,0 +1,16 @@
+{
+  "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/node": "^17.0.33",
+    "@types/uuid": "^8.3.4",
+    "ts-node": "^10.7.0"
+  },
+  "scripts": {
+    "run": "node main.ts"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^8.5.1",
+    "uuid": "^8.3.2",
+    "ydb-sdk": "^3.1.1"
+  }
+}
