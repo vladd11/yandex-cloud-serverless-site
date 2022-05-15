@@ -20,7 +20,7 @@ jobs:
               token: ${{ secrets.OAUTH_TOKEN }}
               cloud-id: ${{ secrets.CLOUD_ID }}
               folder-id: ${{ secrets.FOLDER_ID }}" > /home/runner/.config/yandex-cloud/config.yaml
-      - run: cd nodejs && ./node_modules/.bin/esbuild index.ts --bundle --outfile=build/index.js --platform=node
+      - run: cd nodejs && ./node_modules/.bin/esbuild index.ts --bundle --outfile=build/index.js --platform=node --minify
       - run: >
           /home/runner/yandex-cloud/bin/yc serverless function version create
           --function-id ${{ secrets.FUNCTION_ID }}
