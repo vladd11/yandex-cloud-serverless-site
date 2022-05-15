@@ -21,6 +21,7 @@ jobs:
               cloud-id: ${{ secrets.CLOUD_ID }}
               folder-id: ${{ secrets.FOLDER_ID }}" > /home/runner/.config/yandex-cloud/config.yaml
       - run: cd nodejs && ./node_modules/.bin/esbuild index.ts --bundle --outfile=build/index.js --platform=node --minify
+      - run: mkdir -p nodejs/build/certs && cp nodejs/node_modules/ydb-sdk/certs/* nodejs/build/certs/
       - run: >
           /home/runner/yandex-cloud/bin/yc serverless function version create
           --function-id ${{ secrets.FUNCTION_ID }}
