@@ -13,3 +13,4 @@ esbuild.buildSync({
 })
 
 fs.copyFileSync("package.json", "build/package.json")
+fs.copyFileSync("package-lock.json", "build/package-lock.json")
