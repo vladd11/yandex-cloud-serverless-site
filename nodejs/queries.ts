@@ -2,9 +2,9 @@ import {Session} from "ydb-sdk/build/table";
 import {Ydb} from "ydb-sdk";
 
 export default class Queries {
-    private _addUser: Ydb.Table.PrepareQueryResult;
-    private _insertOrder: Ydb.Table.PrepareQueryResult;
-    private _updateCode: Ydb.Table.PrepareQueryResult;
+    private _addUser: Ydb.Table.PrepareQueryResult | undefined;
+    private _insertOrder: Ydb.Table.PrepareQueryResult | undefined;
+    private _updateCode: Ydb.Table.PrepareQueryResult | undefined;
 
     public async addUser(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
         if (this._addUser) {
@@ -59,9 +59,4 @@ export default class Queries {
     public async insertOrderItems() {
 
     }
-}
-
-interface OrderItem {
-    id: Buffer,
-
 }

@@ -1,12 +1,15 @@
 const esbuild = require('esbuild')
+const pkg = require('./package.json')
+const fs = require("fs");
 
-esbuild.build({
+esbuild.buildSync({
     bundle: true,
-    minify: true,
+
     platform: "node",
-    external: ['ydb-sdk', 'jsonwebtoken', 'uuid'],
+    external: Object.keys(pkg.dependencies),
 
     entryPoints: ['index.ts'],
     outfile: "build/index.js"
 })
 
+fs.copyFileSync("package.json", "build/package.json")
