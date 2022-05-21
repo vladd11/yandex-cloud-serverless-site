@@ -21,3 +21,9 @@ export class ParseError extends JSONRPCError {
         super("Parse error", -32700);
     }
 }
+
+export class MethodNotFound extends JSONRPCError {
+    constructor() {
+        super("Method not found", -32601);
+    }
+}

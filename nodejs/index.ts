@@ -6,7 +6,7 @@ import Queries from "./queries";
 import Event from "./types/Event";
 import Response from "./types/Response";
 
-import {JSONRPCError, ParseError} from "./exceptions";
+import {JSONRPCError, MethodNotFound, ParseError} from "./exceptions";
 import {BaseContext} from "./context";
 
 
@@ -46,7 +46,7 @@ module.exports.handler = async function (event: Event, ctx) {
     }
 
     try {
-        const context : BaseContext = event.requestContext.identity
+        const context: BaseContext = event.requestContext.identity
 
         const requests = [].concat(JSON.parse(event.body))
 
@@ -55,11 +55,20 @@ module.exports.handler = async function (event: Event, ctx) {
 
             for (const request of requests) {
                 try {
-                    responses.push({
-                        jsonrpc: "2.0",
-                        id: request.id,
-                        result: dispatchers[request.method](request.params, context)
-                    })
+                    const method = dispatchers[request.method]
+                    if (method) {
+                        responses.push({
+                            jsonrpc: "2.0",
+                            id: request.id,
+                            result: method(request.params, context)
+                        })
+                    } else {
+                        responses.push({
+                            jsonrpc: "2.0",
+                            id: request.id,
+                            error: new MethodNotFound().toObject()
+                        })
+                    }
                 } catch (e) {
                     const error = (e instanceof JSONRPCError) ? e.toObject() : {
                         code: -32000,
