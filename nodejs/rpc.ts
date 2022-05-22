@@ -19,7 +19,7 @@ export default class Dispatcher {
             const requests = [].concat(JSON.parse(request))
 
             if (requests.length !== 0) {
-                const responses: Array<Response> = [];
+                let responses: Array<Response> | Response = [];
 
                 for (const request of requests) {
                     try {
@@ -49,6 +49,10 @@ export default class Dispatcher {
                             error: error
                         })
                     }
+                }
+
+                if(responses.length === 1) {
+                    responses = responses[0]
                 }
 
                 return JSON.stringify(responses)
