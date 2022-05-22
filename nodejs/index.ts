@@ -3,11 +3,8 @@ import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
 import Queries from "./queries";
 
-import Event from "./types/Event";
-import Response from "./types/Response";
-
-import {JSONRPCError, MethodNotFound, ParseError} from "./exceptions";
-import {BaseContext} from "./context";
+import Event from "./types/event";
+import Dispatcher from "./rpc";
 
 
 const authService = getCredentialsFromEnv();
@@ -31,10 +28,10 @@ async function connect() {
 const queries = new Queries();
 const auth = new Auth(driver.tableClient, queries)
 
-const dispatchers = {
+const dispatchers = new Dispatcher({
     login: auth.login,
     send_code: auth.send_code
-}
+})
 
 // Due to ctx argument
 // noinspection JSUnusedLocalSymbols
@@ -45,90 +42,8 @@ module.exports.handler = async function (event: Event, ctx) {
         event.body = Buffer.from(event.body, "base64").toString('utf8')
     }
 
-    try {
-        const context: BaseContext = event.requestContext.identity
-
-        const requests = [].concat(JSON.parse(event.body))
-
-        if (requests.length !== 0) {
-            const responses: Array<Response> = [];
-
-            for (const request of requests) {
-                try {
-                    const method = dispatchers[request.method]
-                    if (method) {
-                        responses.push({
-                            jsonrpc: "2.0",
-                            id: request.id,
-                            result: method(request.params, context)
-                        })
-                    } else {
-                        responses.push({
-                            jsonrpc: "2.0",
-                            id: request.id,
-                            error: new MethodNotFound().toObject()
-                        })
-                    }
-                } catch (e) {
-                    const error = (e instanceof JSONRPCError) ? e.toObject() : {
-                        code: -32000,
-                        message: (typeof e === "object") ? e.message : e,
-                    }
-
-                    responses.push({
-                        jsonrpc: "2.0",
-                        id: request.id,
-                        error: error
-                    })
-                }
-            }
-
-            return {
-                code: 200,
-                body: JSON.stringify(responses)
-            }
-        }
-    } catch (e) {
-        if (e instanceof SyntaxError) {
-            e = new ParseError().toObject();
-        }
-
-        return {
-            statusCode: 200,
-            body: {
-                "jsonrpc": "2.0",
-                "error": e,
-                "id": null
-            }
-        }
+    return {
+        statusCode: 200,
+        body: dispatchers.call(event.body, event.requestContext.identity)
     }
 }
-
-/*
-async function run() {
-    await connect();
-    /*await driver.tableClient.withSession(async (session) => {
-        const result = await session.executeQuery(`
-        SELECT * FROM orders
-        LIMIT 10;
-        `)
-        console.log(result)
-    })*//*
-
-const queries = new Queries();
-
-await Auth.login(driver.tableClient, queries, "+79170324874", false, {
-    sourceIp: "",
-    userAgent: ""
-})
-}
-
-/*
-const context: Auth.AuthorizedContext = {
-    sourceIp: "",
-    userAgent: "",
-    user_uid: uuidv4()
-}
-
-Auth.login("", context)
-console.log(context)*/

@@ -1,4 +1,4 @@
-import {BaseContext} from "./context";
+import {BaseContext} from "./types/context";
 import {Types} from "ydb-sdk";
 import * as crypto from "crypto";
 
