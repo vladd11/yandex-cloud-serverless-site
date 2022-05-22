@@ -7,7 +7,7 @@ type JSONRPCFunction = (params: {
 }, context: BaseContext) => any;
 
 export default class Dispatcher {
-    private readonly _dispatchers;
+    private readonly _dispatchers: { [key: string]: JSONRPCFunction };
 
     constructor(dispatchers: { [key: string]: JSONRPCFunction }) {
         this._dispatchers = dispatchers;
@@ -51,10 +51,7 @@ export default class Dispatcher {
                     }
                 }
 
-                return {
-                    code: 200,
-                    body: JSON.stringify(responses)
-                }
+                return JSON.stringify(responses)
             }
         } catch (e) {
             if (e instanceof SyntaxError) {
@@ -62,12 +59,9 @@ export default class Dispatcher {
             }
 
             return {
-                statusCode: 200,
-                body: {
-                    "jsonrpc": "2.0",
-                    "error": e,
-                    "id": null
-                }
+                "jsonrpc": "2.0",
+                "error": e,
+                "id": null
             }
         }
     }

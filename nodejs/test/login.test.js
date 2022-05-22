@@ -1,5 +1,5 @@
-test("Login call", cb => {
-    const result = require('../index').handler({
+async function wrapper() {
+    return await require('../index').handler({
         isBase64Encoded: false,
         requestContext: {
             identity: {
@@ -18,5 +18,6 @@ test("Login call", cb => {
                 }
             })
     }, null)
-    expect(result).toBeDefined()
-});
+}
+
+wrapper().then(r => console.log(r))
