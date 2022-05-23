@@ -1,12 +1,9 @@
+const {requestContext} = require("./config.js");
+
 async function wrapper() {
     return await require('../index').handler({
         isBase64Encoded: false,
-        requestContext: {
-            identity: {
-                sourceIp: "0.0.0.0",
-                userAgent: "MockTest"
-            }
-        },
+        requestContext: requestContext,
         body: JSON.stringify(
             {
                 "jsonrpc": "2.0",
@@ -20,4 +17,7 @@ async function wrapper() {
     }, null)
 }
 
-wrapper().then(r => console.log(r))
+wrapper().then(r => {
+    console.log(r)
+    process.exit()
+})

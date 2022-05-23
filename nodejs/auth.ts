@@ -1,5 +1,4 @@
 import {BaseContext} from "./types/context";
-import {Types} from "ydb-sdk";
 import * as crypto from "crypto";
 
 import {sign} from "jsonwebtoken";
@@ -14,18 +13,28 @@ function loggable(methodName: string, context: BaseContext) {
     console.log(`${methodName} was called from ${context.sourceIp} ${context.userAgent}`)
 }
 
-class PhoneAlreadyInUse implements JSONRPCError {
-    message = "Phone already in use";
-    code = 1005;
+class PhoneAlreadyInUse extends JSONRPCError {
+    constructor() {
+        super("Phone already in use", 1005);
+    }
 
     name = "PhoneAlreadyInUse";
+}
 
-    toObject() {
-        return {
-            code: this.code,
-            message: this.message
-        };
+class WrongSMSCodeError extends JSONRPCError {
+    constructor() {
+        super("Wrong SMS code", 1001);
     }
+
+    name = "WrongSMSCodeError";
+}
+
+class PhoneIsNotRegistered extends JSONRPCError {
+    constructor() {
+        super("Phone is not registered yet", 1006);
+    }
+
+    name = "PhoneIsNotRegistered"
 }
 
 export class Auth {
@@ -43,35 +52,6 @@ export class Auth {
     constructor(client: TableClient, queries: Queries) {
         this.client = client;
         this.queries = queries;
-    }
-
-    private createLoginParams(phone: string, uid: Buffer, sms_code: number) {
-        return {
-            '$phone': {
-                type: Types.UTF8,
-                value: {
-                    textValue: phone
-                }
-            },
-            '$id': {
-                type: Types.STRING,
-                value: {
-                    bytesValue: uid
-                }
-            },
-            '$sms_code': {
-                type: Types.UINT32,
-                value: {
-                    uint32Value: sms_code
-                }
-            },
-            '$sms_code_expiration': {
-                type: Types.DATETIME, // Timestamp is 32-bit unsigned integer
-                value: {
-                    uint32Value: Date.now() + this.SMS_CODE_EXPIRATION_TIME
-                }
-            }
-        }
     }
 
     /**
@@ -93,7 +73,8 @@ export class Auth {
             await this.client.withSession(async (session) => {
                 await session.executeQuery(
                     await this.queries.addUser(session),
-                    this.createLoginParams(params.phone, uid, sms_code)
+                    this.queries.addUserParams(params.phone, uid, sms_code,
+                        Date.now() + this.SMS_CODE_EXPIRATION_TIME)
                 )
             })
 
@@ -107,49 +88,56 @@ export class Auth {
             }
         } catch (e) {
             if (e instanceof PreconditionFailed) {
-                await this.send_code({phone: params.phone}, context)
+                await this.sendCode({phone: params.phone}, context)
                 throw new PhoneAlreadyInUse();
-            }
-        }
-    }
-
-    createUpdateCodeParams(phone: string, sms_code: number) {
-        return {
-            '$phone': {
-                type: Types.UTF8,
-                value: {
-                    textValue: phone
-                }
-            },
-            '$sms_code': {
-                type: Types.UINT32,
-                value: {
-                    uint32Value: sms_code
-                }
-            },
-            '$sms_code_expiration': {
-                type: Types.DATETIME, // Datetime is 32-bit unsigned integer
-                value: {
-                    uint32Value: Date.now() + this.SMS_CODE_EXPIRATION_TIME
-                }
             }
         }
     }
 
     // context var is required to call function by JSON RPC
     // noinspection JSUnusedLocalSymbols
-    async send_code(params: { phone: string }, context: BaseContext) {
+    async sendCode(params: { phone: string }, context: BaseContext) {
+        loggable("sendCode", context)
+
         const code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
         await this.client.withSession(async (session) => {
             await session.executeQuery(
                 await this.queries.updateCode(session),
-                this.createUpdateCodeParams(params.phone, code)
+                this.queries.createUpdateCodeParams(
+                    params.phone, code,
+                    Date.now() + this.SMS_CODE_EXPIRATION_TIME)
             )
         })
 
         /*self.sms.send_sms(phone,
             f'Your SMS code is: {code}',
             context['sourceIp'])*/
+    }
+
+    async checkCode(params: { phone: string, code: number }, context: BaseContext) {
+        loggable("checkCode", context)
+
+        if ((this.SMS_CODE_RANDMIN <= params.code) && (params.code <= this.SMS_CODE_RANDMAX)) {
+            return await this.client.withSession(async (session) => {
+                const queryResult = await session.executeQuery(await this.queries.selectUser(session),
+                    this.queries.createSelectUserParams(params.phone))
+                const result = queryResult.resultSets[0].rows
+
+                if(result.length === 0) throw new PhoneIsNotRegistered();
+
+                const uid = result[0].bytesValue;
+
+                context.userID = uid
+
+                return {
+                    token: sign(
+                        {
+                            'id': uid,
+                            'phone': params.phone
+                        }, this.SECRET_KEY)
+                }
+            })
+        } else throw new WrongSMSCodeError()
     }
 }

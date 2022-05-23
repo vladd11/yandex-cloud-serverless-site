@@ -29,8 +29,9 @@ const queries = new Queries();
 const auth = new Auth(driver.tableClient, queries)
 
 const dispatchers = new Dispatcher({
-    login: auth.login,
-    send_code: auth.send_code
+    login: auth.login.bind(auth),
+    send_code: auth.sendCode.bind(auth),
+    check_code: auth.checkCode.bind(auth)
 })
 
 // Due to ctx argument
@@ -44,6 +45,6 @@ module.exports.handler = async function (event: Event, ctx) {
 
     return {
         statusCode: 200,
-        body: dispatchers.call(event.body, event.requestContext.identity)
+        body: await dispatchers.call(event.body, event.requestContext.identity)
     }
 }
