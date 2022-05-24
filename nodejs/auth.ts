@@ -5,7 +5,6 @@ import {sign} from "jsonwebtoken";
 import {TableClient} from "ydb-sdk/build/table";
 
 import Queries from "./queries";
-import {PreconditionFailed} from "ydb-sdk/build/errors";
 
 import {JSONRPCError} from "./exceptions";
 
@@ -65,32 +64,35 @@ export class Auth {
     }, context: BaseContext): Promise<{ [key: string]: any }> {
         loggable("login", context);
 
-        try {
-            const uid = crypto.randomBytes(16)
 
-            const sms_code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
+        const uid = crypto.randomBytes(16)
 
-            await this.client.withSession(async (session) => {
-                await session.executeQuery(
-                    await this.queries.addUser(session),
-                    this.queries.addUserParams(params.phone, uid, sms_code,
-                        Date.now() + this.SMS_CODE_EXPIRATION_TIME)
-                )
-            })
+        const sms_code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
-            context.user_uid = uid
+        await this.client.withSession(async (session) => {
+            const queryResult = await session.executeQuery(
+                await this.queries.addUser(session),
+                this.queries.addUserParams(params.phone, uid, sms_code,
+                    Date.now() + this.SMS_CODE_EXPIRATION_TIME)
+            )
 
-            return {
-                token: sign({
-                    id: uid.toString('hex'),
-                    phone: params.phone
-                }, this.SECRET_KEY)
-            }
-        } catch (e) {
-            if (e instanceof PreconditionFailed) {
-                await this.sendCode({phone: params.phone}, context)
+            if (queryResult.resultSets[0].rows[0].items[0].boolValue) { // If phone was already registered; how it works - see query
+                /*
+                sms.send_sms(phone,
+                            f'Your SMS code is: {code}',
+                            context['sourceIp'])
+                 */
                 throw new PhoneAlreadyInUse();
             }
+        })
+
+        context.userID = uid
+
+        return {
+            token: sign({
+                id: uid.toString('hex'),
+                phone: params.phone
+            }, this.SECRET_KEY)
         }
     }
 
@@ -124,7 +126,7 @@ export class Auth {
                     this.queries.createSelectUserParams(params.phone))
                 const result = queryResult.resultSets[0].rows
 
-                if(result.length === 0) throw new PhoneIsNotRegistered();
+                if (result.length === 0) throw new PhoneIsNotRegistered();
 
                 const uid = result[0].bytesValue;
 

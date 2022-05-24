@@ -40,13 +40,19 @@ export default class Queries {
         if (this._addUser) return this._addUser
 
         this._addUser = await session.prepareQuery(`
-        DECLARE $id AS String;
-        DECLARE $sms_code AS Uint32;
-        DECLARE $sms_code_expiration AS Datetime;
-        DECLARE $phone AS Utf8;
-                
-        INSERT INTO users(id, phone, sms_code, sms_code_expiration)
-        VALUES ($id, $phone, $sms_code, $sms_code_expiration);`)
+        DECLARE $id as String;
+        DECLARE $phone as Utf8;
+        DECLARE $sms_code as Uint32;
+        DECLARE $sms_code_expiration as Datetime;
+        
+        $old_id = SELECT id FROM users WHERE phone=$phone;
+        
+        UPSERT INTO users(phone, id, sms_code, sms_code_expiration)
+        VALUES($phone,
+        if($old_id IS NULL, $id, $old_id),
+        $sms_code, $sms_code_expiration);
+        
+        SELECT $old_id IS NOT NULL;`)
         return this._addUser
     }
 
