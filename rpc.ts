@@ -77,3 +77,7 @@ export default class Dispatcher {
         }
     }
 }
+
+export function loggable(methodName: string, context: BaseContext) {
+    console.log(`${methodName} was called from ${context.sourceIp} ${context.userAgent}`)
+}

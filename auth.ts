@@ -5,14 +5,11 @@ import {sign} from "jsonwebtoken";
 import {TableClient} from "ydb-sdk/build/table";
 
 import Queries from "./queries";
-
 import {JSONRPCError} from "./exceptions";
+import sendSMS from "./sms";
+import {loggable} from "./rpc";
 
-function loggable(methodName: string, context: BaseContext) {
-    console.log(`${methodName} was called from ${context.sourceIp} ${context.userAgent}`)
-}
-
-class PhoneAlreadyInUse extends JSONRPCError {
+export class PhoneAlreadyInUse extends JSONRPCError {
     constructor() {
         super("Phone already in use", 1005);
     }
@@ -20,7 +17,7 @@ class PhoneAlreadyInUse extends JSONRPCError {
     name = "PhoneAlreadyInUse";
 }
 
-class WrongSMSCodeError extends JSONRPCError {
+export class WrongSMSCodeError extends JSONRPCError {
     constructor() {
         super("Wrong SMS code", 1001);
     }
@@ -28,12 +25,31 @@ class WrongSMSCodeError extends JSONRPCError {
     name = "WrongSMSCodeError";
 }
 
-class PhoneIsNotRegistered extends JSONRPCError {
+export class PhoneIsNotRegistered extends JSONRPCError {
     constructor() {
         super("Phone is not registered yet", 1006);
     }
 
     name = "PhoneIsNotRegistered"
+}
+
+class AuthIsRequired extends JSONRPCError {
+    constructor() {
+        super("You should auth to call this function", 1003);
+    }
+
+    name = "AuthIsRequired"
+}
+
+export type AuthorizedContext = BaseContext & {
+    userID?: string
+}
+
+export function authRequired(methodName: string, context: AuthorizedContext) {
+    if (!context.userID) {
+        console.log(`Auth is required to call ${methodName} function`)
+        throw new AuthIsRequired();
+    }
 }
 
 export class Auth {
@@ -64,9 +80,7 @@ export class Auth {
     }, context: BaseContext): Promise<{ [key: string]: any }> {
         loggable("login", context);
 
-
         const uid = crypto.randomBytes(16)
-
         const sms_code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
         await this.client.withSession(async (session) => {
@@ -77,11 +91,8 @@ export class Auth {
             )
 
             if (queryResult.resultSets[0].rows[0].items[0].boolValue) { // If phone was already registered; how it works - see query
-                /*
-                sms.send_sms(phone,
-                            f'Your SMS code is: {code}',
-                            context['sourceIp'])
-                 */
+                sendSMS(params.phone, `Your SMS code is: ${sms_code}`, context.sourceIp)
+
                 throw new PhoneAlreadyInUse();
             }
         })
@@ -122,8 +133,11 @@ export class Auth {
 
         if ((this.SMS_CODE_RANDMIN <= params.code) && (params.code <= this.SMS_CODE_RANDMAX)) {
             return await this.client.withSession(async (session) => {
-                const queryResult = await session.executeQuery(await this.queries.selectUser(session),
-                    this.queries.createSelectUserParams(params.phone))
+                const queryResult = await session.executeQuery(
+                    await this.queries.selectUser(session),
+                    this.queries.createSelectUserParams(params.phone),
+                    this.queries.staleReadOnly()
+                )
                 const result = queryResult.resultSets[0].rows
 
                 if (result.length === 0) throw new PhoneIsNotRegistered();

@@ -120,12 +120,13 @@ export default class Queries {
     public async insertOrder(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
         if (this._insertOrder) return this._insertOrder;
 
+        // language=SQL
         this._insertOrder = await session.prepareQuery(`
         DECLARE $order_id AS String;
         DECLARE $user_id AS String;
         DECLARE $order_ids AS List<String>;
         
-        INSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
+        UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
         
         SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
         FROM order_items AS order_item
@@ -136,6 +137,50 @@ export default class Queries {
     }
 
     public async insertOrderItems() {
+        // language=SQL
+        return `
+        DECLARE $order_id AS String;
+        DECLARE $user_id AS String;
+        DECLARE $order_ids AS List<String>;
+        
+        DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
 
+        INSERT INTO order_items(id, order_id, product_id, quantity) 
+        SELECT id, order_id, product_id, quantity FROM $items;
+        
+        UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
+        
+        SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+        FROM order_items AS order_item
+        
+        INNER JOIN products AS product ON (order_item.product_id==product.id)
+        WHERE order_item.id IN $order_ids;
+        `
+    }
+
+    public createInsertOrderParams(id: Buffer) {
+        return {
+            "$id": {
+                type: Types.STRING,
+                value: {
+                    bytesValue: id
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns txControl object for Stale Read Only mode.
+     * Docs:
+     * Data reads in a transaction return results with a possible delay (fractions of a second).
+     * Each individual read returns consistent data, but no consistency between different reads is guaranteed.
+     */
+    public staleReadOnly() {
+        return {
+            beginTx: {
+                staleReadOnly: {}
+            },
+            commitTx: true
+        }
     }
 }
