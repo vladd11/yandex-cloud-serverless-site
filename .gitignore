@@ -103,8 +103,6 @@ dist
 # vuepress v2.x temp and cache directory
 .temp
 
-*.pyc
-
 # Docusaurus cache and generated files
 .docusaurus
 
