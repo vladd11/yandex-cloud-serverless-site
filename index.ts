@@ -28,7 +28,7 @@ async function connect() {
 const queries = new Queries();
 const auth = new Auth(driver.tableClient, queries)
 
-const dispatchers = new Dispatcher({
+const dispatcher = new Dispatcher({
     login: auth.login.bind(auth),
     send_code: auth.sendCode.bind(auth),
     check_code: auth.checkCode.bind(auth)
@@ -45,6 +45,6 @@ module.exports.handler = async function (event: Event, ctx) {
 
     return {
         statusCode: 200,
-        body: await dispatchers.call(event.body, event.requestContext.identity)
+        body: await dispatcher.call(event.body, event.requestContext.identity)
     }
 }
