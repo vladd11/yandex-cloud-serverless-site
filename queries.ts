@@ -1,11 +1,13 @@
 import {Session} from "ydb-sdk/build/table";
 import {Types, Ydb} from "ydb-sdk";
+import {OrderItem} from "./types/product";
 
 export default class Queries {
     private _addUser: Ydb.Table.PrepareQueryResult | undefined;
     private _insertOrder: Ydb.Table.PrepareQueryResult | undefined;
     private _updateCode: Ydb.Table.PrepareQueryResult | undefined;
     private _selectSMSCode: Ydb.Table.PrepareQueryResult | undefined;
+    private _insertOrderItems: Ydb.Table.PrepareQueryResult | undefined;
 
     public addUserParams(phone: string, uid: Buffer, smsCode: number, smsCodeExpiration: number) {
         return {
@@ -125,48 +127,90 @@ export default class Queries {
         DECLARE $order_id AS String;
         DECLARE $user_id AS String;
         DECLARE $order_ids AS List<String>;
-        
+
         UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
         
         SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
         FROM order_items AS order_item
         
         INNER JOIN products AS product ON (order_item.product_id==product.id)
-        WHERE order_item.id in $order_ids;`)
+        WHERE order_item.id IN $order_ids;`)
         return this._insertOrder;
     }
 
-    public async insertOrderItems() {
-        // language=SQL
-        return `
-        DECLARE $order_id AS String;
-        DECLARE $user_id AS String;
-        DECLARE $order_ids AS List<String>;
-        
-        DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
-
-        INSERT INTO order_items(id, order_id, product_id, quantity) 
-        SELECT id, order_id, product_id, quantity FROM $items;
-        
-        UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-        
-        SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
-        FROM order_items AS order_item
-        
-        INNER JOIN products AS product ON (order_item.product_id==product.id)
-        WHERE order_item.id IN $order_ids;
-        `
-    }
-
-    public createInsertOrderParams(id: Buffer) {
+    public createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer) {
         return {
-            "$id": {
+            "$order_id": {
                 type: Types.STRING,
                 value: {
-                    bytesValue: id
+                    bytesValue: orderID
+                }
+            },
+            "$order_ids": {
+                type: Types.list(Types.STRING),
+                value: {
+                    items: items.map(value => {
+                        return {
+                            bytesValue: value.orderItemID
+                        }
+                    })
+                }
+            },
+            "$user_id": {
+                type: Types.STRING,
+                value: {
+                    bytesValue: userID
                 }
             }
+        };
+    }
+
+    public async insertOrderItems(session: Session) {
+        if (this._insertOrderItems) {
+            return this._insertOrderItems
         }
+
+        // language=SQL
+        this._insertOrderItems = await session.prepareQuery(`
+        DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
+
+        UPSERT INTO order_items(id, order_id, product_id, quantity) 
+        SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
+        `)
+        return this._insertOrderItems
+    }
+
+    public createInsertOrderItemsParams(items: Array<OrderItem>, orderID: Buffer) {
+        const itemParams = this.createItemsParams(items, orderID)
+
+        return {
+            "$items": itemParams
+        }
+    }
+
+    private createItemsParams(items: Array<OrderItem>, orderID: Buffer) {
+        return {
+            value: {
+                items: items.map(product => {
+                    return {
+                        items: [
+                            {bytesValue: product.orderItemID},
+                            {bytesValue: orderID},
+                            {bytesValue: Buffer.from(product.id)},
+                            {uint32Value: product.count}
+                        ]
+                    };
+                })
+            },
+            type: Types.list(Types.struct(
+                {
+                    "id": Types.STRING,
+                    "order_id": Types.STRING,
+                    "product_id": Types.STRING,
+                    "quantity": Types.UINT32
+                },
+            ))
+        };
     }
 
     /**

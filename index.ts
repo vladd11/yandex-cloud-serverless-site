@@ -5,6 +5,7 @@ import Queries from "./queries";
 
 import Event from "./types/event";
 import Dispatcher from "./rpc";
+import OrderManager from "./order-manager";
 
 
 const authService = getCredentialsFromEnv();
@@ -27,16 +28,16 @@ async function connect() {
 
 const queries = new Queries();
 const auth = new Auth(driver.tableClient, queries)
+const orderManager = new OrderManager(driver.tableClient, queries)
 
 const dispatcher = new Dispatcher({
     login: auth.login.bind(auth),
     send_code: auth.sendCode.bind(auth),
-    check_code: auth.checkCode.bind(auth)
+    check_code: auth.checkCode.bind(auth),
+    add_order: orderManager.addOrder.bind(orderManager)
 })
 
-// Due to ctx argument
-// noinspection JSUnusedLocalSymbols
-module.exports.handler = async function (event: Event, ctx) {
+module.exports.handler = async function (event: Event) {
     if (!isReady) await connect();
 
     if (event.isBase64Encoded) {

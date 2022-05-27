@@ -5,7 +5,7 @@ import {loggable} from "./rpc";
 import {AuthorizedContext, authRequired} from "./auth";
 import * as crypto from "crypto";
 
-import Product from "./types/product";
+import {OrderItem} from "./types/product";
 
 class CartIsEmpty extends JSONRPCError {
     constructor() {
@@ -22,7 +22,7 @@ export default class OrderManager {
         this.queries = queries;
     }
 
-    public async addOrder(params: { products: Array<Product> }, context: AuthorizedContext) {
+    public async addOrder(params: { products: Array<OrderItem> }, context: AuthorizedContext) {
         loggable("addOrder", context)
         authRequired("addOrder", context)
 
@@ -30,16 +30,21 @@ export default class OrderManager {
 
         const id = crypto.randomBytes(16)
 
+        params.products.forEach(value => value.orderItemID = crypto.randomBytes(16))
+
         await this.client.withSession(async (session) => {
             await session.executeQuery(
-                await this.queries.insertOrderItems(),
-                this.queries.createInsertOrderParams(id)
+                await this.queries.insertOrderItems(session),
+                this.queries.createInsertOrderItemsParams(params.products, id)
+            )
+            await session.executeQuery(
+                await this.queries.insertOrder(session),
+                this.queries.createInsertOrderParams(params.products, Buffer.from(context.userID), id)
             )
         })
-        for (const product of params.products) {
-            Buffer.from(product.id, "hex")
 
-
+        return {
+            id: id.toString("hex")
         }
     }
 }

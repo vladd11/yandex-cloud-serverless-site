@@ -60,9 +60,9 @@ export default class Dispatcher {
                 }
 
                 return JSON.stringify(
-                    (responses.length === 0)
-                        ? responses
-                        : responses[0])
+                    (responses.length === 1)
+                        ? responses[0]
+                        : responses)
             }
         } catch (e) {
             if (e instanceof SyntaxError) {
