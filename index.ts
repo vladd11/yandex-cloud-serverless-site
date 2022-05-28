@@ -31,6 +31,7 @@ const auth = new Auth(driver.tableClient, queries)
 const orderManager = new OrderManager(driver.tableClient, queries)
 
 const dispatcher = new Dispatcher({
+    verify: auth.verify.bind(auth),
     login: auth.login.bind(auth),
     send_code: auth.sendCode.bind(auth),
     check_code: auth.checkCode.bind(auth),

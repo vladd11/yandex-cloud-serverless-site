@@ -1,7 +1,7 @@
 import {BaseContext} from "./types/context";
 import * as crypto from "crypto";
 
-import {sign} from "jsonwebtoken";
+import {sign, verify} from "jsonwebtoken";
 import {TableClient} from "ydb-sdk/build/table";
 
 import Queries from "./queries";
@@ -15,6 +15,14 @@ export class PhoneAlreadyInUse extends JSONRPCError {
     }
 
     name = "PhoneAlreadyInUse";
+}
+
+export class WrongJWTTokenException extends JSONRPCError {
+    constructor() {
+        super("JWT token can't be decrypted", 1002);
+    }
+
+    name = "WrongJWTTokenException"
 }
 
 export class WrongSMSCodeError extends JSONRPCError {
@@ -49,6 +57,13 @@ export function authRequired(methodName: string, context: AuthorizedContext) {
     if (!context.userID) {
         console.log(`Auth is required to call ${methodName} function`)
         throw new AuthIsRequired();
+    }
+}
+
+declare module "jsonwebtoken" {
+    export interface JwtPayload {
+        id: string;
+        phone: string;
     }
 }
 
@@ -149,11 +164,24 @@ export class Auth {
                 return {
                     token: sign(
                         {
-                            'id': uid,
-                            'phone': params.phone
+                            id: Buffer.from(uid).toString("hex"),
+                            phone: params.phone
                         }, this.SECRET_KEY)
                 }
             })
         } else throw new WrongSMSCodeError()
+    }
+
+    async verify(params: { token: string }, context: AuthorizedContext) {
+        loggable("verify", context)
+
+        const payload = verify(params.token, this.SECRET_KEY)
+
+        if (!payload || typeof payload === "string") throw new WrongJWTTokenException();
+
+        return {
+            id: payload.id,
+            phone: payload.phone
+        }
     }
 }
