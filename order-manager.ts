@@ -32,7 +32,7 @@ export default class OrderManager {
 
         params.products.forEach(value => value.orderItemID = crypto.randomBytes(16))
 
-        await this.client.withSession(async (session) => {
+        await this.client.withSessionRetry(async (session) => {
             await session.executeQuery(
                 await this.queries.insertOrderItems(session),
                 this.queries.createInsertOrderItemsParams(params.products, id)
