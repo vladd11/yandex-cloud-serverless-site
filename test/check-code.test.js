@@ -6,11 +6,10 @@ async function wrapper() {
         body: JSON.stringify([
             {
                 "jsonrpc": "2.0",
-                "id": 0,
-                "method": "check_code",
+                "id": "0",
+                "method": "verify",
                 "params": {
-                    "phone": "+7",
-                    "code": 229760
+                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjkyZmJmOTIxZTM4YWU3MGMyZGU2M2M1YzVmYjAzZDQyIiwicGhvbmUiOiIrNyIsImlhdCI6MTY1MzczODExNn0.aUmjGLu1n83zQqRpRlclQrVa8cIfG2OLTkIUYAi8beQ"
                 }
             },
             {
@@ -20,12 +19,12 @@ async function wrapper() {
                 "params": {
                     "products": [
                         {
-                            "id": "01aad20e78a44bb3a05717eb9895dfa6",
+                            "id": "01d00b1fd41a4719899156003959b3dd",
                             "count": 1
                         }
                     ],
-                    "paymentMethod": "cash",
-                    "address": ""
+                    "paymentMethod": "",
+                    "address": "cash"
                 }
             }
         ]),

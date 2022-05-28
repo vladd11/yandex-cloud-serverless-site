@@ -44,7 +44,8 @@ export default class OrderManager {
         })
 
         return {
-            id: id.toString("hex")
+            id: id.toString("hex"),
+            redirect: "https://google.com"
         }
     }
 }
