@@ -102,7 +102,7 @@ export class Auth {
             const queryResult = await session.executeQuery(
                 await this.queries.addUser(session),
                 this.queries.addUserParams(params.phone, uid, sms_code,
-                    Date.now() + this.SMS_CODE_EXPIRATION_TIME)
+                    Math.round(Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
             )
 
             if (queryResult.resultSets[0].rows[0].items[0].boolValue) { // If phone was already registered; how it works - see query
@@ -134,7 +134,7 @@ export class Auth {
                 await this.queries.updateCode(session),
                 this.queries.createUpdateCodeParams(
                     params.phone, code,
-                    (Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
+                    Math.round(Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
             )
         })
 
