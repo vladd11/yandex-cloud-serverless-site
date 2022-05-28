@@ -134,7 +134,7 @@ export class Auth {
                 await this.queries.updateCode(session),
                 this.queries.createUpdateCodeParams(
                     params.phone, code,
-                    Date.now() + this.SMS_CODE_EXPIRATION_TIME)
+                    (Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
             )
         })
 
@@ -157,7 +157,7 @@ export class Auth {
 
                 if (result.length === 0) throw new PhoneIsNotRegistered();
 
-                const uid = result[0].bytesValue;
+                const uid = result[0].items[0].bytesValue;
 
                 context.userID = uid
 
@@ -175,9 +175,14 @@ export class Auth {
     async verify(params: { token: string }, context: AuthorizedContext) {
         loggable("verify", context)
 
-        const payload = verify(params.token, this.SECRET_KEY)
+        let payload;
+        try {
+            payload = verify(params.token, this.SECRET_KEY)
+        } catch (e) {
+            throw new WrongJWTTokenException();
+        }
 
-        if (!payload || typeof payload === "string") throw new WrongJWTTokenException();
+        if (typeof payload === "string") throw new WrongJWTTokenException();
 
         return {
             id: payload.id,
