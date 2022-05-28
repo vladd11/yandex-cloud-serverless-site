@@ -138,6 +138,8 @@ export class Auth {
             )
         })
 
+        return {}
+
         /*self.sms.send_sms(phone,
             f'Your SMS code is: {code}',
             context['sourceIp'])*/
