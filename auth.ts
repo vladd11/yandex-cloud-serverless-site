@@ -98,7 +98,7 @@ export class Auth {
         const uid : Buffer = crypto.randomBytes(16)
         const sms_code : number = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
-        await this.client.withSession(async (session) => {
+        await this.client.withSessionRetry(async (session) => {
             const queryResult = await session.executeQuery(
                 await this.queries.addUser(session),
                 this.queries.addUserParams(params.phone, uid, sms_code,
@@ -129,7 +129,7 @@ export class Auth {
 
         const code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
-        await this.client.withSession(async (session) => {
+        await this.client.withSessionRetry(async (session) => {
             await session.executeQuery(
                 await this.queries.updateCode(session),
                 this.queries.createUpdateCodeParams(
@@ -149,7 +149,7 @@ export class Auth {
         loggable("checkCode", context)
 
         if ((this.SMS_CODE_RANDMIN <= params.code) && (params.code <= this.SMS_CODE_RANDMAX)) {
-            return await this.client.withSession(async (session) => {
+            return await this.client.withSessionRetry(async (session) => {
                 const queryResult = await session.executeQuery(
                     await this.queries.selectUser(session),
                     this.queries.createSelectUserParams(params.phone),

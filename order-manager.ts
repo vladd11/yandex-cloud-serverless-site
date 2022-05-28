@@ -22,7 +22,11 @@ export default class OrderManager {
         this.queries = queries;
     }
 
-    public async addOrder(params: { products: Array<OrderItem> }, context: AuthorizedContext) {
+    public async addOrder(params: {
+        products: Array<OrderItem>,
+        paymentMethod: string,
+        address: string
+    }, context: AuthorizedContext) {
         loggable("addOrder", context)
         authRequired("addOrder", context)
 
