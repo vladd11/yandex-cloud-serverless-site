@@ -37,10 +37,13 @@ export default class OrderManager {
                 await this.queries.insertOrderItems(session),
                 this.queries.createInsertOrderItemsParams(params.products, id)
             )
+        })
+
+        await this.client.withSessionRetry(async (session) => {
             await session.executeQuery(
                 await this.queries.insertOrder(session),
                 this.queries.createInsertOrderParams(params.products, Buffer.from(context.userID), id)
-            )
+            );
         })
 
         return {
