@@ -9,7 +9,8 @@ esbuild.buildSync({
     external: Object.keys(pkg.dependencies),
 
     entryPoints: ['index.ts'],
-    outfile: "build/index.js"
+    outfile: "build/index.js",
+    sourcemap: "external"
 })
 
 fs.copyFileSync("package.json", "build/package.json")
