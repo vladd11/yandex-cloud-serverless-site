@@ -50,7 +50,7 @@ class AuthIsRequired extends JSONRPCError {
 }
 
 export type AuthorizedContext = BaseContext & {
-    userID?: string
+    userID?: Buffer
 }
 
 export function authRequired(methodName: string, context: AuthorizedContext) {
@@ -92,11 +92,11 @@ export class Auth {
     public async login(params: {
         phone: string,
         verify: boolean
-    }, context: BaseContext): Promise<{ [key: string]: any }> {
+    }, context: AuthorizedContext): Promise<{ [key: string]: any }> {
         loggable("login", context);
 
-        const uid = crypto.randomBytes(16)
-        const sms_code = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
+        const uid : Buffer = crypto.randomBytes(16)
+        const sms_code : number = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
         await this.client.withSession(async (session) => {
             const queryResult = await session.executeQuery(
@@ -145,7 +145,7 @@ export class Auth {
             context['sourceIp'])*/
     }
 
-    async checkCode(params: { phone: string, code: number }, context: BaseContext) {
+    async checkCode(params: { phone: string, code: number }, context: AuthorizedContext) {
         loggable("checkCode", context)
 
         if ((this.SMS_CODE_RANDMIN <= params.code) && (params.code <= this.SMS_CODE_RANDMAX)) {
@@ -159,14 +159,14 @@ export class Auth {
 
                 if (result.length === 0) throw new PhoneIsNotRegistered();
 
-                const uid = result[0].items[0].bytesValue;
+                const uid : Buffer = Buffer.from(result[0].items[0].bytesValue);
 
                 context.userID = uid
 
                 return {
                     token: sign(
                         {
-                            id: Buffer.from(uid).toString("hex"),
+                            id: uid.toString("hex"),
                             phone: params.phone
                         }, this.SECRET_KEY)
                 }
@@ -185,6 +185,8 @@ export class Auth {
         }
 
         if (typeof payload === "string") throw new WrongJWTTokenException();
+
+        context.userID = Buffer.from(payload.id)
 
         return {
             id: payload.id,
