@@ -29,7 +29,6 @@ export default class OrderManager {
     }, context: AuthorizedContext) {
         loggable("addOrder", context)
         authRequired("addOrder", context)
-
         if (params.products.length === 0) throw new CartIsEmpty()
 
         const id = crypto.randomBytes(16)
@@ -52,7 +51,7 @@ export default class OrderManager {
 
         return {
             id: id.toString("hex"),
-            redirect: "https://google.com"
+            redirect: (params.paymentMethod === "cash") ? null : "https://google.com"
         }
     }
 }
