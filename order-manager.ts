@@ -51,7 +51,7 @@ export default class OrderManager {
 
         return {
             id: id.toString("hex"),
-            redirect: (params.paymentMethod === "cash") ? null : "https://google.com"
+            redirect: (params.paymentMethod === "cash") ? "https://google.com" : null
         }
     }
 }
