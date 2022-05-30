@@ -39,23 +39,21 @@ export default class Dispatcher {
                                 result: await method(request.params, context)
                             })
                         } else {
-                            responses.push({
-                                jsonrpc: "2.0",
-                                id: request.id,
-                                error: new MethodNotFound().toObject()
-                            })
+                            responses.push(Dispatcher._error(new MethodNotFound().toObject(), request.id))
                         }
                     } catch (e) {
-                        const error = (e instanceof JSONRPCError) ? e.toObject() : {
-                            code: -32000,
-                            message: (typeof e === "object") ? e.message : e,
+                        let error;
+                        if (e instanceof JSONRPCError) {
+                            error = e.toObject()
+                        } else {
+                            error = {
+                                code: -32000,
+                                message: (typeof e === "object") ? e.message : e,
+                            };
+                            console.error(error)
                         }
 
-                        responses.push({
-                            jsonrpc: "2.0",
-                            id: request.id,
-                            error: error
-                        })
+                        responses.push(Dispatcher._error(error, request.id))
                     }
                 }
 
@@ -69,11 +67,15 @@ export default class Dispatcher {
                 e = new ParseError().toObject();
             }
 
-            return {
-                "jsonrpc": "2.0",
-                "error": e,
-                "id": null
-            }
+            return Dispatcher._error(e)
+        }
+    }
+
+    private static _error(error, id?) {
+        return {
+            "jsonrpc": "2.0",
+            "error": error,
+            "id": id
         }
     }
 }
