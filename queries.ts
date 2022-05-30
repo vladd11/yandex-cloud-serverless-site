@@ -4,10 +4,9 @@ import {OrderItem} from "./types/product";
 
 export default class Queries {
     private _addUser: Ydb.Table.PrepareQueryResult | undefined;
-    private _insertOrder: Ydb.Table.PrepareQueryResult | undefined;
     private _updateCode: Ydb.Table.PrepareQueryResult | undefined;
     private _selectSMSCode: Ydb.Table.PrepareQueryResult | undefined;
-    private _insertOrderItems: Ydb.Table.PrepareQueryResult | undefined;
+    private _insertOrder: Ydb.Table.PrepareQueryResult | undefined;
     private _getOrder: Ydb.Table.PrepareQueryResult | undefined;
 
     public addUserParams(phone: string, uid: Buffer, smsCode: number, smsCodeExpiration: number) {
@@ -42,6 +41,7 @@ export default class Queries {
     public async addUser(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
         if (this._addUser) return this._addUser
 
+        //language=SQL
         this._addUser = await session.prepareQuery(`
         DECLARE $id as String;
         DECLARE $phone as Utf8;
@@ -85,6 +85,7 @@ export default class Queries {
     public async updateCode(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
         if (this._updateCode) return this._updateCode
 
+        //language=SQL
         this._updateCode = await session.prepareQuery(`
         DECLARE $phone AS Utf8;
         DECLARE $sms_code AS Uint32;
@@ -110,6 +111,7 @@ export default class Queries {
     public async selectUser(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
         if (this._selectSMSCode) return this._selectSMSCode;
 
+        //language=SQL
         this._selectSMSCode = await session.prepareQuery(`
         DECLARE $phone AS Utf8;
         
@@ -121,12 +123,12 @@ export default class Queries {
     }
 
     public async insertOrder(session: Session) {
-        if (this._insertOrderItems) {
-            return this._insertOrderItems
+        if (this._insertOrder) {
+            return this._insertOrder
         }
 
         // language=SQL
-        this._insertOrderItems = await session.prepareQuery(`
+        this._insertOrder = await session.prepareQuery(`
         DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
         DECLARE $order_id AS String;
         DECLARE $user_id AS String;
@@ -146,7 +148,7 @@ export default class Queries {
         
         SELECT column4 FROM $table;
         `)
-        return this._insertOrderItems
+        return this._insertOrder
     }
 
     public createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer) {
