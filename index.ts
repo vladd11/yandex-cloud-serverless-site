@@ -11,7 +11,7 @@ import OrderManager from "./order-manager";
 
 const authService = getCredentialsFromEnv();
 const driver = new Driver({
-    endpoint: process.env.ENDPOINT || "grpcs://ydb.serverless.yandexcloud.net:2135",
+    endpoint: process.env.ENDPOINT ?? "grpcs://ydb.serverless.yandexcloud.net:2135",
     database: process.env.DATABASE,
     authService: authService
 });
