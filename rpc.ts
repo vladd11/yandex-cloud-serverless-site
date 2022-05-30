@@ -50,7 +50,7 @@ export default class Dispatcher {
                                 code: -32000,
                                 message: (typeof e === "object") ? e.message : e,
                             };
-                            console.error(error)
+                            console.error(e)
                         }
 
                         responses.push(Dispatcher._error(error, request.id))
