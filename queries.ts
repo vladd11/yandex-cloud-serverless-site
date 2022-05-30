@@ -1,4 +1,4 @@
-import {Session} from "ydb-sdk/build/table";
+import {Session} from "ydb-sdk/build/cjs/table";
 import {Types, Ydb} from "ydb-sdk";
 import {OrderItem} from "./types/product";
 
@@ -8,6 +8,7 @@ export default class Queries {
     private _updateCode: Ydb.Table.PrepareQueryResult | undefined;
     private _selectSMSCode: Ydb.Table.PrepareQueryResult | undefined;
     private _insertOrderItems: Ydb.Table.PrepareQueryResult | undefined;
+    private _getOrder: Ydb.Table.PrepareQueryResult | undefined;
 
     public addUserParams(phone: string, uid: Buffer, smsCode: number, smsCodeExpiration: number) {
         return {
@@ -128,13 +129,20 @@ export default class Queries {
         DECLARE $user_id AS String;
         DECLARE $order_ids AS List<String>;
 
+        $table = (
+            SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+            FROM order_items AS order_item
+            
+            INNER JOIN products AS product ON (order_item.product_id==product.id)
+            WHERE order_item.id IN $order_ids
+        );
+        
         UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
+        SELECT column0, column1, column2, column3, column4 
+        FROM $table;
         
-        SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
-        FROM order_items AS order_item
-        
-        INNER JOIN products AS product ON (order_item.product_id==product.id)
-        WHERE order_item.id IN $order_ids;`)
+        SELECT column4 FROM $table;
+        `)
         return this._insertOrder;
     }
 
@@ -196,7 +204,7 @@ export default class Queries {
                         items: [
                             {bytesValue: product.orderItemID},
                             {bytesValue: orderID},
-                            {bytesValue: Buffer.from(product.id)},
+                            {bytesValue: Buffer.from(product.id, "hex")},
                             {uint32Value: product.count}
                         ]
                     };
@@ -211,6 +219,46 @@ export default class Queries {
                 },
             ))
         };
+    }
+
+    public async getOrder(session: Session) {
+        if (!this._getOrder) {
+            //language=SQL
+            this._getOrder = await session.prepareQuery(`
+            DECLARE $id AS String;
+ 
+            SELECT orders.id, hasPaid, isCompleted, price, user_id, user.phone
+            FROM orders
+            
+            INNER JOIN users VIEW idx_user_id AS user 
+            ON (orders.user_id==user.id)
+            
+            WHERE orders.id=$id;
+            
+            SELECT 
+            order_item.price, quantity,
+            product.image_uri, product.title
+            
+            FROM order_items VIEW idx_order_id AS order_item
+            
+            INNER JOIN products AS product
+            ON order_item.product_id==product.id
+            
+            WHERE order_id=$id;
+            `)
+        }
+        return this._getOrder
+    }
+
+    public createGetOrderParams(orderID: Buffer) {
+        return {
+            "$id": {
+                type: Types.STRING,
+                value: {
+                    bytesValue: orderID
+                }
+            }
+        }
     }
 
     /**

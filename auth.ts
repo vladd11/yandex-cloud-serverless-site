@@ -2,12 +2,12 @@ import {BaseContext} from "./types/context";
 import * as crypto from "crypto";
 
 import {sign, verify} from "jsonwebtoken";
-import {TableClient} from "ydb-sdk/build/table";
 
 import Queries from "./queries";
 import {JSONRPCError} from "./exceptions";
 import sendSMS from "./sms";
 import {loggable} from "./rpc";
+import {TableClient} from "ydb-sdk/build/cjs/table";
 
 export class PhoneAlreadyInUse extends JSONRPCError {
     constructor() {
@@ -186,7 +186,7 @@ export class Auth {
 
         if (typeof payload === "string") throw new WrongJWTTokenException();
 
-        context.userID = Buffer.from(payload.id)
+        context.userID = Buffer.from(payload.id, "hex")
 
         return {
             id: payload.id,

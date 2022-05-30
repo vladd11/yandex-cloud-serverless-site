@@ -1,7 +1,7 @@
 const {requestContext} = require("./config.js");
 
 async function wrapper() {
-    return await require("../build/index").handler({
+    return await require("../index").handler({
         requestContext: requestContext,
         body: JSON.stringify([
             {

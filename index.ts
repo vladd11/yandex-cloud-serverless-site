@@ -1,4 +1,5 @@
-import {Auth} from "./auth"
+import {Auth} from "./auth";
+
 import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
 import Queries from "./queries";
@@ -35,7 +36,8 @@ const dispatcher = new Dispatcher({
     login: auth.login.bind(auth),
     send_code: auth.sendCode.bind(auth),
     check_code: auth.checkCode.bind(auth),
-    add_order: orderManager.addOrder.bind(orderManager)
+    add_order: orderManager.addOrder.bind(orderManager),
+    get_order: orderManager.getOrder.bind(orderManager)
 })
 
 module.exports.handler = async function (event: Event) {

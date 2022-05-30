@@ -15,6 +15,6 @@
   "dependencies": {
     "jsonwebtoken": "^8.5.1",
     "uuid": "^8.3.2",
-    "ydb-sdk": "^3.1.1"
+    "ydb-sdk": "^3.3.2"
   }
 }

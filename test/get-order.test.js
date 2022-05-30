@@ -1,4 +1,4 @@
-const {requestContext} = require("./config");
+const {requestContext} = require("./config.js");
 
 async function wrapper() {
     return await require('../index').handler({
@@ -15,20 +15,14 @@ async function wrapper() {
                     }
                 },
                 {
-                    "jsonrpc": "2.0",
-                    "id": 0,
-                    "method": "add_order",
-                    "params": {
-                        products: [
-                            {
-                                id: "01aad20e78a44bb3a05717eb9895dfa6",
-                                count: 1
-                            }
-                        ]
+                    jsonrpc: "2.0",
+                    id: 1,
+                    method: "get_order",
+                    params: {
+                        orderID: "e6aabd95e7978e90f17b8979dfd29416"
                     }
-                }
-            ])
-    })
+                }])
+    }, null)
 }
 
 wrapper().then(r => {
