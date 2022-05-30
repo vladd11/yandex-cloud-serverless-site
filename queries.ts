@@ -120,48 +120,44 @@ export default class Queries {
         return this._selectSMSCode;
     }
 
-    public async insertOrder(session: Session): Promise<Ydb.Table.PrepareQueryResult> {
-        if (this._insertOrder) return this._insertOrder;
+    public async insertOrder(session: Session) {
+        if (this._insertOrderItems) {
+            return this._insertOrderItems
+        }
 
         // language=SQL
-        this._insertOrder = await session.prepareQuery(`
+        this._insertOrderItems = await session.prepareQuery(`
+        DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
         DECLARE $order_id AS String;
         DECLARE $user_id AS String;
-        DECLARE $order_ids AS List<String>;
-
+        
+        UPSERT INTO order_items(id, order_id, product_id, quantity) 
+        SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
+        
         $table = (
             SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
-            FROM order_items AS order_item
-            
-            INNER JOIN products AS product ON (order_item.product_id==product.id)
-            WHERE order_item.id IN $order_ids
+            FROM AS_TABLE($items) AS order_item
+            INNER JOIN products AS product
+            ON (order_item.product_id==product.id)
         );
         
         UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-        SELECT column0, column1, column2, column3, column4 
-        FROM $table;
+        SELECT column0, column1, column2, column3, column4 FROM $table;
         
         SELECT column4 FROM $table;
         `)
-        return this._insertOrder;
+        return this._insertOrderItems
     }
 
     public createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer) {
+        const itemParams = this.createItemsParams(items, orderID)
+
         return {
+            "$items": itemParams,
             "$order_id": {
                 type: Types.STRING,
                 value: {
                     bytesValue: orderID
-                }
-            },
-            "$order_ids": {
-                type: Types.list(Types.STRING),
-                value: {
-                    items: items.map(value => {
-                        return {
-                            bytesValue: value.orderItemID
-                        }
-                    })
                 }
             },
             "$user_id": {
@@ -170,29 +166,6 @@ export default class Queries {
                     bytesValue: userID
                 }
             }
-        };
-    }
-
-    public async insertOrderItems(session: Session) {
-        if (this._insertOrderItems) {
-            return this._insertOrderItems
-        }
-
-        // language=SQL
-        this._insertOrderItems = await session.prepareQuery(`
-        DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
-
-        UPSERT INTO order_items(id, order_id, product_id, quantity) 
-        SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
-        `)
-        return this._insertOrderItems
-    }
-
-    public createInsertOrderItemsParams(items: Array<OrderItem>, orderID: Buffer) {
-        const itemParams = this.createItemsParams(items, orderID)
-
-        return {
-            "$items": itemParams
         }
     }
 

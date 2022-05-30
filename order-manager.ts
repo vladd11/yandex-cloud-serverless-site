@@ -6,6 +6,7 @@ import {AuthorizedContext, authRequired} from "./auth";
 import * as crypto from "crypto";
 
 import {OrderItem} from "./types/product";
+import longToNumber from "./longToNumber";
 
 class CartIsEmpty extends JSONRPCError {
     constructor() {
@@ -37,23 +38,16 @@ export default class OrderManager {
             value.orderItemID = crypto.randomBytes(16)
         })
 
-        await this.client.withSessionRetry(async (session) => {
-            await session.executeQuery(
-                await this.queries.insertOrderItems(session),
-                this.queries.createInsertOrderItemsParams(params.products, id)
-            )
-        })
-
-        const price = await this.client.withSessionRetry(async (session) => {
-            return (await session.executeQuery(
+        const result = await this.client.withSessionRetry(async (session) => {
+            return await session.executeQuery(
                 await this.queries.insertOrder(session),
                 this.queries.createInsertOrderParams(params.products, context.userID, id)
-            )).resultSets[0].rows[0].uint64Value
+            )
         })
 
         return {
             id: id.toString("hex"),
-            price: price,
+            price: longToNumber(result.resultSets[0].rows[0].items[0].uint64Value),
             redirect: (params.paymentMethod === "cash") ? "https://google.com" : null
         }
     }
@@ -83,22 +77,12 @@ export default class OrderManager {
 
             // If userID in context == userID of order
             if (Buffer.from(userID).equals(context.userID)) {
-                let orderPrice = orderAndUser.items[3].uint64Value;
-                if (typeof orderPrice !== "number") {
-                    orderPrice = orderPrice.toNumber()
-                }
-
                 return {
                     phone: orderAndUser.items[5].textValue,
-                    price: orderPrice,
+                    price: longToNumber(orderAndUser.items[3].uint64Value),
                     products: result.resultSets[1].rows.map(value => {
-                        let productPrice = value.items[0].uint64Value
-                        if (typeof productPrice !== "number") {
-                            productPrice = productPrice?.toNumber()
-                        }
-
                         return {
-                            price: productPrice,
+                            price: longToNumber(value.items[0].uint64Value),
                             quantity: value.items[1].uint32Value,
                             imageURI: value.items[2].textValue,
                             title: value.items[3].textValue
