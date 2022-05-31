@@ -68,7 +68,7 @@ declare module "jsonwebtoken" {
 }
 
 export class Auth {
-    public SMS_CODE_LENGTH: number = parseInt(process.env.SMS_CODE_LENGTH) ?? 6;
+    public SMS_CODE_LENGTH: number = parseInt(process.env.SMS_CODE_LENGTH) || 6;
     public SMS_CODE_RANDMIN = 10 ** (this.SMS_CODE_LENGTH - 1);
     public SMS_CODE_RANDMAX = (10 ** this.SMS_CODE_LENGTH) - 1;
 
