@@ -48,7 +48,7 @@ export default class OrderManager {
 		return {
 			id: id.toString("hex"),
 			price: priceToNumber(result.resultSets[0].rows[0].items[0].uint64Value),
-			redirect: (params.paymentMethod === "cash") ? "https://google.com" : null
+			redirect: (params.paymentMethod === "cash") ? null : "https://google.com"
 		}
 	}
 
