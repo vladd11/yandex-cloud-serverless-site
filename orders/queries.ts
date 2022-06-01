@@ -76,7 +76,7 @@ export namespace OrderQueries {
     export const getOrder = `
     DECLARE $id AS String;
     
-    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone
+    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone, delivery_time
     FROM orders
     
     WHERE orders.id=$id;

@@ -87,6 +87,7 @@ export default class OrderManager {
 				return {
 					phone: longToNumber(order.items[5].uint64Value),
 					price: priceToNumber(order.items[3].uint64Value),
+					time: order.items[6].uint32Value,
 					products: result.resultSets[1].rows.map(value => {
 						return {
 							Price: priceToNumber(value.items[0].uint64Value),
