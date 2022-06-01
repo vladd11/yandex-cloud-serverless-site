@@ -2,8 +2,6 @@ import {Auth} from "./auth/auth";
 
 import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
-import Queries from "./auth/queries";
-
 import Event from "./types/event";
 import Dispatcher from "./rpc";
 import OrderManager from "./orders/order-manager";
@@ -27,9 +25,8 @@ async function connect() {
     isReady = true
 }
 
-const queries = new Queries();
-const auth = new Auth(driver.tableClient, queries)
-const orderManager = new OrderManager(driver.tableClient, queries)
+const auth = new Auth(driver.tableClient)
+const orderManager = new OrderManager(driver.tableClient)
 
 const dispatcher = new Dispatcher({
     verify: auth.verify.bind(auth),
