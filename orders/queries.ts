@@ -7,6 +7,7 @@ export namespace OrderQueries {
     DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
+    DECLARE $phone AS Uint64;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
     SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
@@ -18,12 +19,12 @@ export namespace OrderQueries {
     ON (order_item.product_id==product.id)
     );
     
-    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price)
-    SELECT column0, column1, column2, column3, column4 FROM $table;
+    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone)
+    SELECT column0, column1, column2, column3, column4, $phone FROM $table;
     
     SELECT column4 FROM $table;`
 
-    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer) {
+    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: number) {
         return {
             "$items": createItemsParams(items, orderID),
             "$order_id": {
@@ -36,6 +37,12 @@ export namespace OrderQueries {
                 type: Types.STRING,
                 value: {
                     bytesValue: userID
+                }
+            },
+            "$phone": {
+                type: Types.UINT64,
+                value: {
+                    uint64Value: phone
                 }
             }
         }
@@ -69,11 +76,8 @@ export namespace OrderQueries {
     export const getOrder = `
     DECLARE $id AS String;
     
-    SELECT orders.id, hasPaid, isCompleted, price, user_id, user.phone
+    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone
     FROM orders
-    
-    INNER JOIN users VIEW idx_user_id AS user 
-    ON (orders.user_id==user.id)
     
     WHERE orders.id=$id;
     

@@ -27,3 +27,13 @@ export class MethodNotFound extends JSONRPCError {
         super("Method not found", -32601);
     }
 }
+
+export class NotEnoughArgsError extends JSONRPCError {
+    constructor(argument: string) {
+        super(`Argument ${argument} not provided`, -32602);
+    }
+}
+
+export function requiredArgument(argument: string, value: any) {
+    if(!value) throw new NotEnoughArgsError(argument)
+}
