@@ -8,6 +8,7 @@ export namespace OrderQueries {
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
     DECLARE $phone AS Uint64;
+    DECLARE $payment_method AS Uint8;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
     SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
@@ -19,12 +20,12 @@ export namespace OrderQueries {
     ON (order_item.product_id==product.id)
     );
     
-    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone)
-    SELECT column0, column1, column2, column3, column4, $phone FROM $table;
+    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method)
+    SELECT column0, column1, column2, column3, column4, $phone, $payment_method FROM $table;
     
     SELECT column4 FROM $table;`
 
-    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: number) {
+    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: number, paymentMethod: number) {
         return {
             "$items": createItemsParams(items, orderID),
             "$order_id": {
@@ -43,6 +44,12 @@ export namespace OrderQueries {
                 type: Types.UINT64,
                 value: {
                     uint64Value: phone
+                }
+            },
+            "$payment_method": {
+                type: Types.UINT8,
+                value: {
+                    uint32Value: paymentMethod
                 }
             }
         }
@@ -76,7 +83,7 @@ export namespace OrderQueries {
     export const getOrder = `
     DECLARE $id AS String;
     
-    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone, delivery_time
+    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone, delivery_time, payment_method
     FROM orders
     
     WHERE orders.id=$id;

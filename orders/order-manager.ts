@@ -16,6 +16,17 @@ class CartIsEmpty extends JSONRPCError {
 	}
 }
 
+class InvalidPaymentMethod extends JSONRPCError {
+	constructor() {
+		super("Payment method not found", 2001);
+	}
+}
+
+const paymentMethods = {
+	cash: 0,
+	card: 1
+}
+
 export default class OrderManager {
 	private client: TableClient;
 
@@ -38,6 +49,11 @@ export default class OrderManager {
 
 		if (params.products.length === 0) throw new CartIsEmpty()
 
+		const paymentMethod : number = paymentMethods[params.paymentMethod]
+		if(!paymentMethod) {
+			throw new InvalidPaymentMethod();
+		}
+
 		const id = crypto.randomBytes(16)
 
 		params.products.forEach(value => {
@@ -47,7 +63,7 @@ export default class OrderManager {
 		const result = await this.client.withSessionRetry(async (session) => {
 			return await session.executeQuery(
 				await session.prepareQuery(OrderQueries.insertOrder),
-                OrderQueries.createInsertOrderParams(params.products, context.userID, id, params.phone)
+                OrderQueries.createInsertOrderParams(params.products, context.userID, id, params.phone, paymentMethod)
 			)
 		})
 
