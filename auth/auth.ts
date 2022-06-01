@@ -1,13 +1,14 @@
-import {BaseContext} from "./types/context";
+import {BaseContext} from "../types/context";
 import * as crypto from "crypto";
 
 import {sign, verify} from "jsonwebtoken";
 
-import Queries from "./queries";
-import {JSONRPCError} from "./exceptions";
-import sendSMS from "./sms";
-import {loggable} from "./rpc";
+import {AuthQueries} from "./queries";
+import {JSONRPCError} from "../exceptions";
+import sendSMS from "../sms";
+import {loggable} from "../rpc";
 import {TableClient} from "ydb-sdk/build/cjs/table";
+import staleReadOnly from "../staleReadOnly";
 
 export class PhoneAlreadyInUse extends JSONRPCError {
     constructor() {
@@ -76,12 +77,10 @@ export class Auth {
 
     private SECRET_KEY = process.env.SECRET_KEY;
 
-    private queries: Queries;
     private client: TableClient;
 
-    constructor(client: TableClient, queries: Queries) {
+    constructor(client: TableClient) {
         this.client = client;
-        this.queries = queries;
     }
 
     /**
@@ -92,16 +91,16 @@ export class Auth {
     public async login(params: {
         phone: string,
         verify: boolean
-    }, context: AuthorizedContext): Promise<{ [key: string]: any }> {
+    }, context: AuthorizedContext): Promise<{ token: string }> {
         loggable("login", context);
 
-        const uid : Buffer = crypto.randomBytes(16)
-        const sms_code : number = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
+        const uid: Buffer = crypto.randomBytes(16)
+        const sms_code: number = crypto.randomInt(this.SMS_CODE_RANDMIN, this.SMS_CODE_RANDMAX)
 
         await this.client.withSessionRetry(async (session) => {
             const queryResult = await session.executeQuery(
-                await this.queries.addUser(session),
-                this.queries.addUserParams(params.phone, uid, sms_code,
+                await session.prepareQuery(AuthQueries.addUser),
+                AuthQueries.addUserParams(params.phone, uid, sms_code,
                     Math.round(Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
             )
 
@@ -131,8 +130,8 @@ export class Auth {
 
         await this.client.withSessionRetry(async (session) => {
             await session.executeQuery(
-                await this.queries.updateCode(session),
-                this.queries.createUpdateCodeParams(
+                await session.prepareQuery(AuthQueries.updateCode),
+                AuthQueries.createUpdateCodeParams(
                     params.phone, code,
                     Math.round(Date.now() / 1000) + this.SMS_CODE_EXPIRATION_TIME)
             )
@@ -151,15 +150,15 @@ export class Auth {
         if ((this.SMS_CODE_RANDMIN <= params.code) && (params.code <= this.SMS_CODE_RANDMAX)) {
             return await this.client.withSessionRetry(async (session) => {
                 const queryResult = await session.executeQuery(
-                    await this.queries.selectUser(session),
-                    this.queries.createSelectUserParams(params.phone),
-                    this.queries.staleReadOnly()
+                    await session.prepareQuery(AuthQueries.selectUser),
+                    AuthQueries.createSelectUserParams(params.phone),
+                    staleReadOnly
                 )
                 const result = queryResult.resultSets[0].rows
 
                 if (result.length === 0) throw new PhoneIsNotRegistered();
 
-                const uid : Buffer = Buffer.from(result[0].items[0].bytesValue);
+                const uid: Buffer = Buffer.from(result[0].items[0].bytesValue);
 
                 context.userID = uid
 

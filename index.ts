@@ -1,12 +1,12 @@
-import {Auth} from "./auth";
+import {Auth} from "./auth/auth";
 
 import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
-import Queries from "./queries";
+import Queries from "./auth/queries";
 
 import Event from "./types/event";
 import Dispatcher from "./rpc";
-import OrderManager from "./order-manager";
+import OrderManager from "./orders/order-manager";
 
 
 const authService = getCredentialsFromEnv();

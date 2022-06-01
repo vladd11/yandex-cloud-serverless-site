@@ -1,12 +1,14 @@
 import {TableClient} from "ydb-sdk/build/cjs/table";
-import Queries from "./queries";
-import {JSONRPCError} from "./exceptions";
-import {loggable} from "./rpc";
-import {AuthorizedContext, authRequired} from "./auth";
+import {JSONRPCError} from "../exceptions";
+import {loggable} from "../rpc";
+import {AuthorizedContext, authRequired} from "../auth/auth";
 import * as crypto from "crypto";
 
-import {OrderItem} from "./types/product";
-import priceToNumber from "./priceToNumber";
+import {OrderItem} from "../types/product";
+import priceToNumber from "../priceToNumber";
+
+import {OrderQueries} from "./queries";
+import staleReadOnly from "../staleReadOnly";
 
 class CartIsEmpty extends JSONRPCError {
 	constructor() {
@@ -15,12 +17,10 @@ class CartIsEmpty extends JSONRPCError {
 }
 
 export default class OrderManager {
-	private queries: Queries;
 	private client: TableClient;
 
-	constructor(client: TableClient, queries: Queries) {
+	constructor(client: TableClient) {
 		this.client = client;
-		this.queries = queries;
 	}
 
 	public async addOrder(params: {
@@ -40,8 +40,8 @@ export default class OrderManager {
 
 		const result = await this.client.withSessionRetry(async (session) => {
 			return await session.executeQuery(
-				await this.queries.insertOrder(session),
-                this.queries.createInsertOrderParams(params.products, context.userID, id)
+				await session.prepareQuery(OrderQueries.insertOrder),
+                OrderQueries.createInsertOrderParams(params.products, context.userID, id)
 			)
 		})
 
@@ -67,9 +67,9 @@ export default class OrderManager {
 
 		return await this.client.withSessionRetry(async (session) => {
 			const result = await session.executeQuery(
-				await this.queries.getOrder(session),
-				this.queries.createGetOrderParams(Buffer.from(params.orderID, "hex")),
-				this.queries.staleReadOnly()
+				await session.prepareQuery(OrderQueries.getOrder),
+				OrderQueries.createGetOrderParams(Buffer.from(params.orderID, "hex")),
+				staleReadOnly
 			)
 
 			const orderAndUser = result.resultSets[0].rows[0];
