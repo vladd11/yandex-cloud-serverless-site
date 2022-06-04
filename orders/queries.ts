@@ -7,7 +7,7 @@ export namespace OrderQueries {
     DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
-    DECLARE $phone AS String;
+    DECLARE $phone AS Utf8;
     DECLARE $payment_method AS Uint8;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
