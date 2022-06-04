@@ -21,7 +21,14 @@ export namespace OrderQueries {
     );
     
     UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method)
-    SELECT $order_id, false, false, $user_id, column0 as price, $phone, $payment_method FROM $table;
+    SELECT $order_id as id,
+           false as hasPaid,
+           false as isCompleted,
+           $user_id as user_id,
+           column0 as price,
+           $phone as phone,
+           $payment_method as payment_method
+    FROM $table;
     
     SELECT column0 FROM $table;`
 
