@@ -5,7 +5,7 @@ import {AuthorizedContext, authRequired} from "../auth/auth";
 import * as crypto from "crypto";
 
 import {OrderItem} from "../types/product";
-import priceToNumber, {longToNumber} from "../priceToNumber";
+import priceToNumber from "../priceToNumber";
 
 import {OrderQueries} from "./queries";
 import staleReadOnly from "../staleReadOnly";
@@ -37,7 +37,7 @@ export default class OrderManager {
 	public async addOrder(params: {
 		products: Array<OrderItem>,
 		paymentMethod: string,
-		phone: number,
+		phone: string,
 		address: string
 	}, context: AuthorizedContext) {
 		loggable("addOrder", context)
@@ -75,7 +75,7 @@ export default class OrderManager {
 	}
 
 	public async getOrder(params: { orderID: string }, context: AuthorizedContext): Promise<{
-		phone: number;
+		phone: string;
 		price: number;
 		products: {
 			ImageURI: string;
@@ -101,7 +101,7 @@ export default class OrderManager {
 			// If userID in context == userID of order
 			if (Buffer.from(userID).equals(context.userID)) {
 				return {
-					phone: longToNumber(order.items[5].uint64Value),
+					phone: order.items[5].textValue,
 					price: priceToNumber(order.items[3].uint64Value),
 					time: order.items[6].uint32Value,
 					products: result.resultSets[1].rows.map(value => {

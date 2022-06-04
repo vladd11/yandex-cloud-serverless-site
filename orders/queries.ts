@@ -7,7 +7,7 @@ export namespace OrderQueries {
     DECLARE $items AS List<Struct<id: String, order_id: String, product_id: String, quantity: Uint32>>;
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
-    DECLARE $phone AS Uint64;
+    DECLARE $phone AS String;
     DECLARE $payment_method AS Uint8;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
@@ -25,7 +25,7 @@ export namespace OrderQueries {
     
     SELECT column4 FROM $table;`
 
-    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: number, paymentMethod: number) {
+    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number) {
         return {
             "$items": createItemsParams(items, orderID),
             "$order_id": {
@@ -41,9 +41,9 @@ export namespace OrderQueries {
                 }
             },
             "$phone": {
-                type: Types.UINT64,
+                type: Types.STRING,
                 value: {
-                    uint64Value: phone
+                    textValue: phone
                 }
             },
             "$payment_method": {
