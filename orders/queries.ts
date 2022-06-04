@@ -60,6 +60,12 @@ export namespace OrderQueries {
                 value: {
                     uint32Value: paymentMethod
                 }
+            },
+            "$time": {
+                type: Types.DATETIME,
+                value: {
+                    uint32Value: time
+                }
             }
         }
     }
