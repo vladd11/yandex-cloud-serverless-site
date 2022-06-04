@@ -9,7 +9,6 @@ import priceToNumber from "../priceToNumber";
 
 import {OrderQueries} from "./queries";
 import staleReadOnly from "../staleReadOnly";
-import convertPhoneToE164 from "../gatsby-material-e-commerce/src/convertPhoneToE164";
 
 class CartIsEmpty extends JSONRPCError {
     constructor() {
@@ -74,7 +73,7 @@ export default class OrderManager {
             id: id.toString("hex"),
             phone: params.phone,
             time: params.time,
-            price: priceToNumber(result.resultSets[0].rows[0].items[0].uint64Value),
+            price: priceToNumber(result.resultSets[0].rows[0].items[3].uint64Value),
             redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
 
             products: result.resultSets[0].rows.map((value) => {
