@@ -12,7 +12,12 @@ export namespace OrderQueries {
     DECLARE $payment_method AS Uint8;
     
     $table = (
-    SELECT (order_item.quantity * product.price), order_item.id as id
+    SELECT (order_item.quantity * product.price), order_item.id as id,
+            product.price as price,
+            order_item.quantity as quantity,
+            product.image_uri as image_uri,
+            product.title as title
+            
     FROM AS_TABLE($items) AS order_item
     INNER JOIN products AS product
     ON (order_item.product_id==product.id)
@@ -36,7 +41,7 @@ export namespace OrderQueries {
            $d_time as delivery_time
     FROM $table;
     
-    SELECT column0 FROM $table;`
+    SELECT title, image_uri, price, quantity FROM $table;`
 
     export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number, time: number) {
         return {

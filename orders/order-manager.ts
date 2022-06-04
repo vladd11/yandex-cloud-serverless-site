@@ -72,7 +72,21 @@ export default class OrderManager {
         return {
             id: id.toString("hex"),
             price: priceToNumber(result.resultSets[0].rows[0].items[0].uint64Value),
-            redirect: (params.paymentMethod === "cash") ? null : "https://google.com"
+            redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
+
+            products: result.resultSets[0].rows.map((value) => {
+                const title = value.items[0].textValue
+                const imageURI = value.items[1].textValue
+                const price = value.items[2].uint64Value
+                const quantity = value.items[3].uint32Value
+
+                return {
+                    Price: priceToNumber(price),
+                    quantity: quantity,
+                    ImageURI: imageURI,
+                    Title: title
+                }
+            })
         }
     }
 
