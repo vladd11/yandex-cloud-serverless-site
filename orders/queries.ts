@@ -14,16 +14,16 @@ export namespace OrderQueries {
     SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
     
     $table = (
-    SELECT $order_id, false, false, $user_id, SUM(order_item.quantity * product.price)
+    SELECT SUM(order_item.quantity * product.price)
     FROM AS_TABLE($items) AS order_item
     INNER JOIN products AS product
     ON (order_item.product_id==product.id)
     );
     
     UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method)
-    SELECT column0, column1, column2, column3, column4, $phone, $payment_method FROM $table;
+    SELECT $order_id, false, false, $user_id, column0 as price, $phone, $payment_method FROM $table;
     
-    SELECT column4 FROM $table;`
+    SELECT column0 FROM $table;`
 
     export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number) {
         return {
