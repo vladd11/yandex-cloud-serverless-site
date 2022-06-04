@@ -41,7 +41,7 @@ export namespace OrderQueries {
                 }
             },
             "$phone": {
-                type: Types.STRING,
+                type: Types.UTF8,
                 value: {
                     textValue: phone
                 }
