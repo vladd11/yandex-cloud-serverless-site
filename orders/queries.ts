@@ -99,6 +99,7 @@ export namespace OrderQueries {
         };
     }
 
+    //language=SQL
     export const getOrder = `
     DECLARE $id AS String;
     
@@ -108,7 +109,7 @@ export namespace OrderQueries {
     WHERE orders.id=$id;
     
     SELECT 
-    order_item.price, quantity,
+    (order_item.price / quantity), quantity,
     product.image_uri, product.title
     
     FROM order_items VIEW idx_order_id AS order_item
