@@ -11,22 +11,26 @@ export namespace OrderQueries {
     DECLARE $d_time AS Datetime;
     DECLARE $payment_method AS Uint8;
     
-    UPSERT INTO order_items(id, order_id, product_id, quantity) 
-    SELECT id, order_id, product_id, quantity FROM AS_TABLE($items);
-    
     $table = (
-    SELECT SUM(order_item.quantity * product.price)
+    SELECT (order_item.quantity * product.price), order_item.id as id
     FROM AS_TABLE($items) AS order_item
     INNER JOIN products AS product
     ON (order_item.product_id==product.id)
     );
+    
+    UPSERT INTO order_items(id, order_id, product_id, quantity, price) 
+    SELECT order_item.id, order_item.order_id, order_item.product_id, order_item.quantity, prices.column0
+    FROM AS_TABLE($items) as order_item
+    
+    INNER JOIN $table AS prices
+    ON (prices.id==order_item.id);
     
     UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, delivery_time)
     SELECT $order_id as id,
            false as hasPaid,
            false as isCompleted,
            $user_id as user_id,
-           column0 as price,
+           SUM(column0) as price,
            $phone as phone,
            $payment_method as payment_method,
            $d_time as delivery_time
