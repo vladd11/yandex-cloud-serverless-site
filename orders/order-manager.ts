@@ -65,7 +65,7 @@ export default class OrderManager {
 		const result = await this.client.withSessionRetry(async (session) => {
 			return await session.executeQuery(
 				await session.prepareQuery(OrderQueries.insertOrder),
-                OrderQueries.createInsertOrderParams(params.products, context.userID, id, params.phone, paymentMethod)
+                OrderQueries.createInsertOrderParams(params.products, context.userID, id, params.phone, paymentMethod, params.time)
 			)
 		})
 
