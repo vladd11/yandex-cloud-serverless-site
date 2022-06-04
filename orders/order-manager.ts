@@ -38,13 +38,15 @@ export default class OrderManager {
 		products: Array<OrderItem>,
 		paymentMethod: string,
 		phone: string,
-		address: string
+		address: string,
+		time: number
 	}, context: AuthorizedContext) {
 		loggable("addOrder", context)
 		authRequired("addOrder", context)
 
 		requiredArgument("paymentMethod", params.paymentMethod)
 		requiredArgument("products", params.products)
+		requiredArgument("time", params.time)
 		requiredArgument("phone", params.phone)
 
 		if (params.products.length === 0) throw new CartIsEmpty()

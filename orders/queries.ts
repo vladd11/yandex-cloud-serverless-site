@@ -8,6 +8,7 @@ export namespace OrderQueries {
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
     DECLARE $phone AS Utf8;
+    DECLARE $time AS Datetime;
     DECLARE $payment_method AS Uint8;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
@@ -20,19 +21,20 @@ export namespace OrderQueries {
     ON (order_item.product_id==product.id)
     );
     
-    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method)
+    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, delivery_time)
     SELECT $order_id as id,
            false as hasPaid,
            false as isCompleted,
            $user_id as user_id,
            column0 as price,
            $phone as phone,
-           $payment_method as payment_method
+           $payment_method as payment_method,
+           $time as delivery_time
     FROM $table;
     
     SELECT column0 FROM $table;`
 
-    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number) {
+    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number, time: number) {
         return {
             "$items": createItemsParams(items, orderID),
             "$order_id": {
