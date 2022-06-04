@@ -17,14 +17,14 @@ class CartIsEmpty extends JSONRPCError {
 }
 
 class InvalidPaymentMethod extends JSONRPCError {
-	constructor() {
-		super("Payment method not found", 2001);
+	constructor(method) {
+		super(`Payment method "${method}" not found`, 2001);
 	}
 }
 
 const paymentMethods = {
-	cash: 0,
-	card: 1
+	cash: 1,
+	card: 2
 }
 
 export default class OrderManager {
@@ -51,7 +51,7 @@ export default class OrderManager {
 
 		const paymentMethod : number = paymentMethods[params.paymentMethod]
 		if(!paymentMethod) {
-			throw new InvalidPaymentMethod();
+			throw new InvalidPaymentMethod(params.paymentMethod);
 		}
 
 		const id = crypto.randomBytes(16)
