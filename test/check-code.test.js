@@ -1,4 +1,5 @@
 const {requestContext} = require("./config.js");
+const {jwtToken} = require("./config");
 
 async function wrapper() {
     return await require("../index").handler({
@@ -9,7 +10,7 @@ async function wrapper() {
                 "id": "0",
                 "method": "verify",
                 "params": {
-                    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjkyZmJmOTIxZTM4YWU3MGMyZGU2M2M1YzVmYjAzZDQyIiwicGhvbmUiOiIrNyIsImlhdCI6MTY1MzczODExNn0.aUmjGLu1n83zQqRpRlclQrVa8cIfG2OLTkIUYAi8beQ"
+                    "token": jwtToken
                 }
             },
             {
