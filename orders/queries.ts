@@ -8,7 +8,7 @@ export namespace OrderQueries {
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
     DECLARE $phone AS Utf8;
-    DECLARE $time AS Datetime;
+    DECLARE $d_time AS Datetime;
     DECLARE $payment_method AS Uint8;
     
     UPSERT INTO order_items(id, order_id, product_id, quantity) 
@@ -29,7 +29,7 @@ export namespace OrderQueries {
            column0 as price,
            $phone as phone,
            $payment_method as payment_method,
-           $time as delivery_time
+           $d_time as delivery_time
     FROM $table;
     
     SELECT column0 FROM $table;`
@@ -61,7 +61,7 @@ export namespace OrderQueries {
                     uint32Value: paymentMethod
                 }
             },
-            "$time": {
+            "$d_time": {
                 type: Types.DATETIME,
                 value: {
                     uint32Value: time
