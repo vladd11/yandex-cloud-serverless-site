@@ -27,6 +27,8 @@ const paymentMethods = {
     card: 2
 }
 
+const getPaymentMethodByNumberID = (id: number) => Object.keys(paymentMethods).find(key => paymentMethods[key] === id);
+
 export default class OrderManager {
     private client: TableClient;
 
@@ -74,6 +76,7 @@ export default class OrderManager {
             phone: params.phone,
             time: params.time,
             price: priceToNumber(result.resultSets[0].rows[0].items[2].uint64Value),
+            paymentMethod: params.paymentMethod,
             redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
 
             products: result.resultSets[0].rows.map((value) => {
@@ -119,6 +122,7 @@ export default class OrderManager {
             // If userID in context == userID of order
             if (Buffer.from(userID).equals(context.userID)) {
                 return {
+                    paymentMethod: getPaymentMethodByNumberID(order.items[7].uint32Value),
                     phone: order.items[5].textValue,
                     price: priceToNumber(order.items[3].uint64Value),
                     time: order.items[6].uint32Value,
