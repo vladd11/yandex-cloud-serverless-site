@@ -35,5 +35,5 @@ export class NotEnoughArgsError extends JSONRPCError {
 }
 
 export function requiredArgument(argument: string, value: any) {
-    if(!value) throw new NotEnoughArgsError(argument)
+    if(value == null) throw new NotEnoughArgsError(argument)
 }
