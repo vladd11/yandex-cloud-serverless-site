@@ -8,7 +8,7 @@ app.use(bodyParser.text())
 
 const port = 3000
 
-app.post('/', async (req, res) => {
+app.post('/v1', async (req, res) => {
     const result = await index.handler({
         isBase64Encoded: false,
         body: req.body,
@@ -20,6 +20,10 @@ app.post('/', async (req, res) => {
         }
     });
     res.send(result.body)
+})
+
+app.post('/login', async (req, res) => {
+    res.send("test")
 })
 
 app.listen(port, () => {
