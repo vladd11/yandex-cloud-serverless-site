@@ -17,17 +17,20 @@ class CartIsEmpty extends JSONRPCError {
 }
 
 class InvalidPaymentMethod extends JSONRPCError {
-    constructor(method) {
+    constructor(method: string) {
         super(`Payment method "${method}" not found`, 2001);
     }
 }
 
-const paymentMethods = {
+export type PaymentMethod = { [key: string]: number };
+const paymentMethods: PaymentMethod = {
     cash: 1,
     card: 2
 }
 
-const getPaymentMethodByNumberID = (id: number) => Object.keys(paymentMethods).find(key => paymentMethods[key] === id);
+function getPaymentMethodByNumberID(id: number): string | undefined {
+    return Object.keys(paymentMethods).find(key => paymentMethods[key] === id);
+}
 
 export default class OrderManager {
     private client: TableClient;
@@ -37,11 +40,11 @@ export default class OrderManager {
     }
 
     public async addOrder(params: {
-        products: Array<OrderItem>,
-        paymentMethod: string,
-        phone: string,
-        address: string,
-        time: number
+        products?: Array<OrderItem>,
+        paymentMethod?: string,
+        phone?: string,
+        address?: string,
+        time?: number
     }, context: AuthorizedContext) {
         loggable("addOrder", context)
         authRequired("addOrder", context)
@@ -51,23 +54,23 @@ export default class OrderManager {
         requiredArgument("time", params.time)
         requiredArgument("phone", params.phone)
 
-        if (params.products.length === 0) throw new CartIsEmpty()
+        if (params.products!.length === 0) throw new CartIsEmpty()
 
-        const paymentMethod: number = paymentMethods[params.paymentMethod]
+        const paymentMethod: number = paymentMethods[params.paymentMethod!]
         if (!paymentMethod) {
-            throw new InvalidPaymentMethod(params.paymentMethod);
+            throw new InvalidPaymentMethod(params.paymentMethod!);
         }
 
         const id = crypto.randomBytes(16)
 
-        params.products.forEach(value => {
+        params.products!.forEach(value => {
             value.orderItemID = crypto.randomBytes(16)
         })
 
         const result = await this.client.withSessionRetry(async (session) => {
             return await session.executeQuery(
                 await session.prepareQuery(OrderQueries.insertOrder),
-                OrderQueries.createInsertOrderParams(params.products, context.userID, id, params.phone, paymentMethod, params.time)
+                OrderQueries.createInsertOrderParams(params.products!, context.userID!, id, params.phone!, paymentMethod, params.time!)
             )
         })
 
@@ -75,18 +78,18 @@ export default class OrderManager {
             id: id.toString("hex"),
             phone: params.phone,
             time: params.time,
-            price: priceToNumber(result.resultSets[0].rows[0].items[2].uint64Value),
+            price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
             paymentMethod: params.paymentMethod,
             redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
 
-            products: result.resultSets[0].rows.map((value) => {
-                const title = value.items[0].textValue
-                const imageURI = value.items[1].textValue
-                const price = value.items[2].uint64Value
-                const quantity = value.items[3].uint32Value
+            products: result.resultSets[0].rows!.map((value) => {
+                const title = value.items![0].textValue
+                const imageURI = value.items![1].textValue
+                const price = value.items![2].uint64Value
+                const quantity = value.items![3].uint32Value
 
                 return {
-                    Price: priceToNumber(price),
+                    Price: priceToNumber(price!),
                     quantity: quantity,
                     ImageURI: imageURI,
                     Title: title
@@ -95,8 +98,10 @@ export default class OrderManager {
         }
     }
 
-    public async getOrder(params: { orderID: string }, context: AuthorizedContext): Promise<{
+    public async getOrder(params: { orderID?: string }, context: AuthorizedContext): Promise<{
         phone: string;
+        paymentMethod: string,
+        time: number,
         price: number;
         products: {
             ImageURI: string;
@@ -104,7 +109,7 @@ export default class OrderManager {
             Price: number;
             Title: string
         }[]
-    }> {
+    } | null> {
         loggable("getOrder", context)
         authRequired("getOrder", context)
         requiredArgument("orderID", params.orderID)
@@ -112,26 +117,26 @@ export default class OrderManager {
         return await this.client.withSessionRetry(async (session) => {
             const result = await session.executeQuery(
                 await session.prepareQuery(OrderQueries.getOrder),
-                OrderQueries.createGetOrderParams(Buffer.from(params.orderID, "hex")),
+                OrderQueries.createGetOrderParams(Buffer.from(params.orderID!, "hex")),
                 staleReadOnly
             )
 
-            const order = result.resultSets[0].rows[0];
-            const userID = order.items[4].bytesValue;
+            const order = result.resultSets[0].rows![0];
+            const userID = order.items![4].bytesValue!;
 
             // If userID in context == userID of order
-            if (Buffer.from(userID).equals(context.userID)) {
+            if (Buffer.from(userID).equals(context.userID!)) {
                 return {
-                    paymentMethod: getPaymentMethodByNumberID(order.items[7].uint32Value),
-                    phone: order.items[5].textValue,
-                    price: priceToNumber(order.items[3].uint64Value),
-                    time: order.items[6].uint32Value,
-                    products: result.resultSets[1].rows.map(value => {
+                    paymentMethod: getPaymentMethodByNumberID(order.items![7].uint32Value!) ?? "none",
+                    phone: order.items![5].textValue!,
+                    price: priceToNumber(order.items![3].uint64Value!),
+                    time: order.items![6].uint32Value!,
+                    products: result.resultSets[1].rows!.map(value => {
                         return {
-                            Price: priceToNumber(value.items[0].uint64Value),
-                            quantity: value.items[1].uint32Value,
-                            ImageURI: value.items[2].textValue,
-                            Title: value.items[3].textValue
+                            Price: priceToNumber(value.items![0].uint64Value!),
+                            quantity: value.items![1].uint32Value!,
+                            ImageURI: value.items![2].textValue!,
+                            Title: value.items![3].textValue!
                         }
                     })
                 };

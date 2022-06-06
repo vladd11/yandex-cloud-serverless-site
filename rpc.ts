@@ -1,6 +1,7 @@
 import {JSONRPCError, MethodNotFound, ParseError} from "./exceptions";
 import {BaseContext} from "./types/context";
 import Response from "./types/response";
+import {JSONRPCRequest} from "./gatsby-material-e-commerce/src/api/client";
 
 type JSONRPCFunction = (params: {
     [key: string]: any
@@ -24,7 +25,7 @@ export default class Dispatcher {
 
     async call(request: string, context: BaseContext) {
         try {
-            const requests = [].concat(JSON.parse(request))
+            const requests: Array<JSONRPCRequest> = [].concat(JSON.parse(request))
 
             if (requests.length !== 0) {
                 let responses: Array<Response> | Response = [];
@@ -48,7 +49,7 @@ export default class Dispatcher {
                         } else {
                             error = {
                                 code: -32000,
-                                message: (typeof e === "object") ? e.message : e,
+                                message: (e instanceof Error) ? e.message : e,
                             };
                             console.error(e)
                         }
@@ -71,7 +72,7 @@ export default class Dispatcher {
         }
     }
 
-    private static _error(error, id?) {
+    private static _error(error: any, id?: any) {
         return {
             "jsonrpc": "2.0",
             "error": error,

@@ -23,7 +23,7 @@ async function wrapper() {
                         orderID: "77623452a6b5030c55a8a247094c76d8"
                     }
                 }])
-    }, null)
+    })
 }
 
 wrapper().then(r => {

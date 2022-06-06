@@ -30,7 +30,7 @@ async function wrapper() {
             }
         ]),
         isBase64Encoded: false
-    }, {});
+    });
 }
 
 wrapper().then(value => {

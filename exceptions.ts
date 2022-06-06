@@ -1,8 +1,8 @@
 export class JSONRPCError extends Error {
-    public readonly code: any;
-    public readonly message: any;
+    public readonly code: number;
+    public readonly message: string;
 
-    constructor(message, code) {
+    constructor(message: string, code: number) {
         super(message);
         this.code = code;
         this.message = message;

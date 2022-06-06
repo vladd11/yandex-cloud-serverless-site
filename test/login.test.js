@@ -14,7 +14,7 @@ async function wrapper() {
                     "verify": false
                 }
             })
-    }, null)
+    })
 }
 
 wrapper().then(r => {
