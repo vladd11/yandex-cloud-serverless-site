@@ -168,6 +168,8 @@ export class Auth {
                 const result = queryResult.resultSets[0].rows!
 
                 if (result.length === 0) throw new PhoneIsNotRegistered();
+                if(result[0].items![1].uint32Value !== params.code) throw new WrongSMSCodeError();
+                if(result[0].items![2].uint32Value! < (Date.now() / 1000 | 0)) throw new WrongSMSCodeError();
 
                 const uid: Buffer = Buffer.from(result[0].items![0].bytesValue!);
 
