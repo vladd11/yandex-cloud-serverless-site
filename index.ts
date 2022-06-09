@@ -1,10 +1,12 @@
-import {Auth} from "./auth/auth";
+import {LegacyAuth} from "./auth/legacyAuth";
 
 import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
 import Event from "./types/event";
-import Dispatcher from "./rpc";
+import LegacyDispatcher from "./rpc";
 import OrderManager from "./orders/order-manager";
+import Auth from "./auth/auth";
+import Methods from "./types/methods";
 
 
 const authService = getCredentialsFromEnv();
@@ -25,10 +27,10 @@ async function connect() {
     isReady = true
 }
 
-const auth = new Auth(driver.tableClient)
+const auth = new LegacyAuth(driver.tableClient)
 const orderManager = new OrderManager(driver.tableClient)
 
-const dispatcher = new Dispatcher({
+const legacyDispatcher = new LegacyDispatcher({
     verify: auth.verify.bind(auth),
     login: auth.login.bind(auth),
     send_code: auth.sendCode.bind(auth),
@@ -37,6 +39,10 @@ const dispatcher = new Dispatcher({
     get_order: orderManager.getOrder.bind(orderManager)
 })
 
+const methods : Methods = {
+    sendCode: (body: string) => Auth.sendCode(driver.tableClient, body)
+}
+
 module.exports.handler = async function (event: Event) {
     if (!isReady) await connect();
 
@@ -44,8 +50,15 @@ module.exports.handler = async function (event: Event) {
         event.body = Buffer.from(event.body, "base64").toString('utf8')
     }
 
+    if(event.path === "/v1") {
+        return {
+            statusCode: 200,
+            body: await legacyDispatcher.call(event.body, event.requestContext.identity)
+        }
+    }
+
     return {
         statusCode: 200,
-        body: await dispatcher.call(event.body, event.requestContext.identity)
+        body: await methods[event.apiGateway.operationContext.method](event.body)
     }
 }

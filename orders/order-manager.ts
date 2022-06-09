@@ -1,7 +1,7 @@
 import {TableClient} from "ydb-sdk/build/cjs/table";
 import {JSONRPCError, requiredArgument} from "../exceptions";
 import {loggable} from "../rpc";
-import {AuthorizedContext, authRequired} from "../auth/auth";
+import {AuthorizedContext, authRequired} from "../auth/legacyAuth";
 import * as crypto from "crypto";
 
 import {OrderItem} from "../types/product";

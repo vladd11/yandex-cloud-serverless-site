@@ -15,7 +15,7 @@ type JSONRPCFunction = (params: {
  * But it makes function execution 2 times cheaper because Yandex Cloud Functions rounding execution time to 100ms,
  * and it will be +1 HTTP call.
  */
-export default class Dispatcher {
+export default class LegacyDispatcher {
     private readonly _dispatchers: { [key: string]: JSONRPCFunction };
 
     constructor(dispatchers: { [key: string]: JSONRPCFunction }) {
@@ -40,7 +40,7 @@ export default class Dispatcher {
                                 result: await method(request.params, context)
                             })
                         } else {
-                            responses.push(Dispatcher._error(new MethodNotFound().toObject(), request.id))
+                            responses.push(LegacyDispatcher._error(new MethodNotFound().toObject(), request.id))
                         }
                     } catch (e) {
                         let error;
@@ -54,7 +54,7 @@ export default class Dispatcher {
                             console.error(e)
                         }
 
-                        responses.push(Dispatcher._error(error, request.id))
+                        responses.push(LegacyDispatcher._error(error, request.id))
                     }
                 }
 
@@ -68,7 +68,7 @@ export default class Dispatcher {
                 e = new ParseError().toObject();
             }
 
-            return Dispatcher._error(e)
+            return LegacyDispatcher._error(e)
         }
     }
 
