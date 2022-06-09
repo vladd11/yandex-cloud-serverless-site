@@ -3,11 +3,11 @@ export default interface Event {
         identity: {
             sourceIp: string,
             userAgent: string
-        }
-    },
-    apiGateway: {
-        operationContext: {
-            method: string
+        },
+        apiGateway: {
+            operationContext: {
+                method: string
+            }
         }
     },
     path: string,
