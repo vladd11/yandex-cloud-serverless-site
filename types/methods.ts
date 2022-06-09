@@ -1,4 +1,6 @@
-export type Method = (body: string) => void | Promise<void>;
+import {ApiResponse} from "./response";
+
+export type Method = (body: string) => ApiResponse | Promise<ApiResponse>;
 
 type Methods = { [key: string]: Method };
 export default Methods;

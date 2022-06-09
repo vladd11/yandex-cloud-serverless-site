@@ -57,8 +57,9 @@ module.exports.handler = async function (event: Event) {
         }
     }
 
+    const result = await methods[event.requestContext.apiGateway.operationContext.method](event.body);
     return {
-        statusCode: 200,
-        body: await methods[event.requestContext.apiGateway.operationContext.method](event.body)
+        statusCode: result.statusCode,
+        body: result.body ?? ""
     }
 }

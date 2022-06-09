@@ -9,3 +9,8 @@ export default interface Response {
     }
     id: any
 }
+
+export interface ApiResponse {
+    statusCode: number,
+    body?: string
+}

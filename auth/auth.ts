@@ -2,6 +2,7 @@ import {TableClient} from "ydb-sdk/build/cjs/table";
 import {AuthQueries} from "./queries";
 
 import crypto from "crypto";
+import {ApiResponse} from "../types/response";
 
 namespace Auth {
     const SMS_CODE_LENGTH: number = parseInt(process.env.SMS_CODE_LENGTH ?? "6");
@@ -15,7 +16,7 @@ namespace Auth {
      * @param client YDB client
      * @param body It's plain text with only phone
      */
-    export async function sendCode(client: TableClient, body: string) {
+    export async function sendCode(client: TableClient, body: string) : Promise<ApiResponse> {
         const code = crypto.randomInt(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
 
         await client.withSessionRetry(async (session) => {
@@ -26,6 +27,10 @@ namespace Auth {
                     Math.round(Date.now() / 1000) + SMS_CODE_EXPIRATION_TIME)
             )
         })
+
+        return {
+            statusCode: 200
+        }
     }
 }
 
