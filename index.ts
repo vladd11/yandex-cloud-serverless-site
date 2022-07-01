@@ -1,12 +1,9 @@
-import {LegacyAuth} from "./auth/legacyAuth";
-
 import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
 import Event from "./types/event";
-import LegacyDispatcher from "./rpc";
-import OrderManager from "./orders/order-manager";
 import Auth from "./auth/auth";
-import Methods from "./types/methods";
+import {Request, Api} from "./types/api";
+import OrderManager from "./orders/order-manager";
 
 
 const authService = getCredentialsFromEnv();
@@ -27,20 +24,18 @@ async function connect() {
     isReady = true
 }
 
-const auth = new LegacyAuth(driver.tableClient)
-const orderManager = new OrderManager(driver.tableClient)
+const methods: Api = {
+    sendCode: (request) => Auth.sendCodeToLogin(driver.tableClient, request.body, request.headers, request.identity),
+    login: (request) => Auth.login(driver.tableClient, request.body, request.identity),
 
-const legacyDispatcher = new LegacyDispatcher({
-    verify: auth.verify.bind(auth),
-    login: auth.login.bind(auth),
-    send_code: auth.sendCode.bind(auth),
-    check_code: auth.checkCode.bind(auth),
-    add_order: orderManager.addOrder.bind(orderManager),
-    get_order: orderManager.getOrder.bind(orderManager)
-})
-
-const methods : Methods = {
-    sendCode: (body: string) => Auth.sendCode(driver.tableClient, body)
+    order: (request: Request) => OrderManager.order(driver.tableClient, request.body, request.headers, request.identity),
+    getOrder: (request: Request) => {
+        const path = request.path.split("/")
+        return OrderManager.getOrder(driver.tableClient, {
+            orderID: path[path.length - 1]
+        }, request.headers)
+    },
+    resendCode: (request: Request) => Auth.sendCodeToLogin(driver.tableClient, request.body, request.headers, request.identity)
 }
 
 module.exports.handler = async function (event: Event) {
@@ -50,16 +45,29 @@ module.exports.handler = async function (event: Event) {
         event.body = Buffer.from(event.body, "base64").toString('utf8')
     }
 
-    if(event.path === "/v1") {
-        return {
-            statusCode: 200,
-            body: await legacyDispatcher.call(event.body, event.requestContext.identity)
-        }
-    }
+    const method = event.requestContext.apiGateway.operationContext.method;
+    const identity = event.requestContext.identity;
 
-    const result = await methods[event.requestContext.apiGateway.operationContext.method](event.body);
-    return {
-        statusCode: result.statusCode,
-        body: result.body ?? ""
+    const result = await methods[method]?.({
+        path: event.path,
+        body: event.body,
+        headers: event.headers,
+        params: event.params,
+        identity: identity
+    });
+
+    if(result) {
+        return {
+            statusCode: result.statusCode,
+            body: result.body ?? "",
+            headers: {
+                "Content-Type": "application/json"
+            }
+        }
+    } else {
+        return {
+            statusCode: 404,
+            body: ""
+        }
     }
 }

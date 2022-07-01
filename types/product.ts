@@ -4,6 +4,5 @@ export default interface Product {
 }
 
 export interface OrderItem extends Product {
-    value: Buffer
     orderItemID?: Buffer
 }

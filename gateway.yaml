@@ -1,0 +1,252 @@
+# Please replace d5domnlu7d7sjcv50dlt with your API Gateway ID
+# Then replace d4e3ias0cj75nn52701f with your function ID
+openapi: 3.0.0
+info:
+  title: Sample API
+  version: 1.0.0
+servers:
+  - url: https://d5domnlu7d7sjcv50dlt.apigw.yandexcloud.net
+paths:
+  /send-code:
+    post:
+      requestBody:
+        required: true
+        description: Phone where to send code
+        content:
+          text/plain:
+            example: '+79170324874'
+            schema:
+              type: string
+      responses:
+        '200':
+          description: OK
+        '401':
+          description: Phone not found
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: sendCode
+  /login:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - phone
+                - code
+              type: object
+              properties:
+                phone:
+                  type: string
+                code:
+                  type: number
+            example:
+              phone: '+79170324874'
+              code: 123456
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        '401':
+          description: Failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                  message:
+                    type: string
+              examples:
+                notRegistered:
+                  value:
+                    code: 1001
+                    message: Phone is not registered yet
+                wrongCode:
+                  value:
+                    code: 1002
+                    message: Wrong SMS code
+                expired:
+                  value:
+                    code: 1003
+                    message: Expired SMS code
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: login
+  /order:
+    post:
+      description: >
+        Add new order to database. It's will be OK even Authorization headers
+        won't be provided
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - products
+                - paymentMethod
+                - phone
+                - address
+                - time
+              properties:
+                products:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      count:
+                        type: integer
+                paymentMethod:
+                  type: string
+                phone:
+                  type: string
+                address:
+                  type: string
+                time:
+                  type: integer
+                code:
+                  type: integer
+            examples:
+              "Without-SMS-code":
+                value:
+                  products:
+                    - id: 01aad20e78a44bb3a05717eb9895dfa6
+                  count: 1
+                  paymentMethod: cash
+                  phone: '+79170324874'
+                  address: Томашевский тупик, 16
+                  time: 1654784309
+              "With-SMS-code":
+                value:
+                  products:
+                    - id: 01aad20e78a44bb3a05717eb9895dfa6
+                  count: 1
+                  paymentMethod: cash
+                  phone: '+79170324874'
+                  address: Томашевский тупик, 16
+                  time: 1654784309
+                  code: 123456
+      responses:
+        '200':
+          description: When Authorization is OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  price:
+                    type: number
+                  redirect:
+                    type: string
+                  products:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        ImageURI:
+                          type: string
+                        Price:
+                          type: number
+                        quantity:
+                          type: integer
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: order
+  /order/{id}:
+    get:
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: If order was made by the same user
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - phone
+                  - paymentMethod
+                  - price
+                  - time
+                  - products
+                properties:
+                  phone:
+                    type: string
+                  paymentMethod:
+                    type: string
+                  price:
+                    type: number
+                  time:
+                    type: integer
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        Title:
+                          type: string
+                        ImageURI:
+                          type: string
+                        Price:
+                          type: number
+                        quantity:
+                          type: integer
+        '401':
+          description: If JWT token is invalid or not provided
+        '403':
+          description: If order was made by another user
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: getOrder
+  /resend-code:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - phone
+              properties:
+                phone:
+                  type: string
+            example:
+              phone: '+79170324874'
+      responses:
+        '200':
+          description: OK
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: resendCode

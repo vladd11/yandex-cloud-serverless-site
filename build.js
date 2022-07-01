@@ -4,6 +4,7 @@ const fs = require("fs");
 
 esbuild.buildSync({
     bundle: true,
+    minify: true,
 
     platform: "node",
     external: Object.keys(pkg.dependencies),

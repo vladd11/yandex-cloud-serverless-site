@@ -1,147 +1,223 @@
-import {TableClient} from "ydb-sdk/build/cjs/table";
-import {JSONRPCError, requiredArgument} from "../exceptions";
-import {loggable} from "../rpc";
-import {AuthorizedContext, authRequired} from "../auth/legacyAuth";
-import * as crypto from "crypto";
+import {TableClient, Session} from "ydb-sdk/build/cjs/table";
 
+import {ApiResponse, Headers, Identity} from "../types/api";
 import {OrderItem} from "../types/product";
-import priceToNumber from "../priceToNumber";
-
+import Auth, {expiredCode, invalidCode} from "../auth/auth";
 import {OrderQueries} from "./queries";
-import staleReadOnly from "../staleReadOnly";
+import crypto from "crypto";
+import paymentMethods, {getPaymentMethodByNumberID} from "../paymentMethods";
+import priceToNumber from "../utils/priceToNumber";
+import staleReadOnly from "../stale-readonly";
+import {sendLoginSMS} from "../sms";
 
-class CartIsEmpty extends JSONRPCError {
-    constructor() {
-        super("Cart is empty", 2000);
-    }
-}
+namespace OrderManager {
+    import SMS_CODE_RANDMIN = Auth.SMS_CODE_RANDMIN;
+    import SMS_CODE_RANDMAX = Auth.SMS_CODE_RANDMAX;
 
-class InvalidPaymentMethod extends JSONRPCError {
-    constructor(method: string) {
-        super(`Payment method "${method}" not found`, 2001);
-    }
-}
-
-export type PaymentMethod = { [key: string]: number };
-const paymentMethods: PaymentMethod = {
-    cash: 1,
-    card: 2
-}
-
-function getPaymentMethodByNumberID(id: number): string | undefined {
-    return Object.keys(paymentMethods).find(key => paymentMethods[key] === id);
-}
-
-export default class OrderManager {
-    private client: TableClient;
-
-    constructor(client: TableClient) {
-        this.client = client;
+    function argumentIsRequired(name: string): ApiResponse {
+        return {
+            statusCode: 400,
+            body: `Missing argument ${name}`
+        }
     }
 
-    public async addOrder(params: {
+    function cartIsEmpty(): ApiResponse {
+        return {
+            statusCode: 400,
+            body: "Cart is empty"
+        }
+    }
+
+    function invalidPaymentMethod(name: string): ApiResponse {
+        return {
+            statusCode: 400,
+            body: `Invalid payment method ${name}`
+        }
+    }
+
+    interface OrderParams {
         products?: Array<OrderItem>,
         paymentMethod?: string,
         phone?: string,
         address?: string,
-        time?: number
-    }, context: AuthorizedContext) {
-        loggable("addOrder", context)
-        authRequired("addOrder", context)
+        time?: number,
+        code?: number // If client haven't auth token, they may send code and API will return JWT token & add order in one request
+    }
 
-        requiredArgument("paymentMethod", params.paymentMethod)
-        requiredArgument("products", params.products)
-        requiredArgument("time", params.time)
-        requiredArgument("phone", params.phone)
+    /**
+     * Make order
+     * There are 3 variant of actions:
+     * - If Authorization Header provided:
+     * - - Order will be inserted
+     * - - Return HTTP 200
+     * - Else:
+     * - - If code provided:
+     * - - - Runs query that:
+     * - - - - Checks code from DB
+     * - - - - If it's OK, query will add new order
+     * - - - - Else return why it's invalid
+     * - - Else:
+     * - - - Sends SMS code & updates code in DB
+     */
+    export async function order(client: TableClient, body: string, headers: Headers, identity: Identity): Promise<ApiResponse> {
+        const params: OrderParams = JSON.parse(body)
 
-        if (params.products!.length === 0) throw new CartIsEmpty()
+        if (!params.products) return argumentIsRequired("products")
+        if (!params.paymentMethod) return argumentIsRequired("paymentMethod")
+        if (!params.phone) return argumentIsRequired("phone")
+        if (!params.address) return argumentIsRequired("address")
+        if (!params.time) return argumentIsRequired("time")
 
-        const paymentMethod: number = paymentMethods[params.paymentMethod!]
-        if (!paymentMethod) {
-            throw new InvalidPaymentMethod(params.paymentMethod!);
-        }
+        if (params.products!.length === 0) return cartIsEmpty();
+
+        const paymentMethod: number = paymentMethods[params.paymentMethod]
+        if (!paymentMethod) return invalidPaymentMethod(params.paymentMethod)
 
         const id = crypto.randomBytes(16)
 
-        params.products!.forEach(value => {
+        params.products!.forEach((value, index) => {
+            if (!value.id || !value.count) return argumentIsRequired(`Product ${index} doesn't contain id or count`)
+
             value.orderItemID = crypto.randomBytes(16)
         })
 
-        const result = await this.client.withSessionRetry(async (session) => {
-            return await session.executeQuery(
-                await session.prepareQuery(OrderQueries.insertOrder),
-                OrderQueries.createInsertOrderParams(params.products!, context.userID!, id, params.phone!, paymentMethod, params.time!)
-            )
+        if (headers.Authorization?.startsWith("Bearer")) {
+            const verify = Auth._verify(headers.Authorization.substring(7, headers.Authorization.length));
+            if (!verify) return _orderNotAuthorized(client, params.phone, identity)
+
+            const result = await client.withSessionRetry(async (session: Session) => {
+                return await session.executeQuery(
+                    await session.prepareQuery(OrderQueries.insertOrder),
+                    OrderQueries.createInsertOrderParams(params.products!,
+                        verify.id, id,
+                        params.phone!,
+                        paymentMethod,
+                        params.time!)
+                )
+            })
+
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    id: id.toString("hex"),
+                    price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
+                    redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
+                    products: result.resultSets[0].rows!.map((value) => {
+                        return {
+                            Title: value.items![0].textValue,
+                            ImageURI: value.items![1].textValue,
+                            Price: priceToNumber(value.items![2].uint64Value!),
+                            quantity: value.items![3].uint32Value
+                        }
+                    })
+                })
+            }
+        } else {
+            if (params.code) {
+                return _orderCodeAuthorized(client, params, paymentMethod, identity)
+            } else return _orderNotAuthorized(client, params.phone, identity)
+        }
+    }
+
+    /**
+     * This function should be called if code isn't null, but JWT token is.
+     */
+    async function _orderCodeAuthorized(client: TableClient, params: OrderParams, paymentMethod: number, identity: Identity): Promise<ApiResponse> {
+        const userID = crypto.randomBytes(16)
+        const orderID = crypto.randomBytes(16)
+        const optionalNewCode = crypto.randomInt(SMS_CODE_RANDMIN, SMS_CODE_RANDMAX)
+
+        const result = await client.withSessionRetry(async (session) => {
+            return await session.executeQuery(OrderQueries.insertOrderAndCheckCode,
+                OrderQueries.createInsertOrderAndCheckCodeParams(params.products!,
+                    userID,
+                    orderID,
+                    params.phone!,
+                    paymentMethod,
+                    params.time!,
+                    params.code!,
+                    optionalNewCode))
         })
 
+        const valid = result.resultSets[1].rows![0];
+
+        if (!valid.items![0].boolValue) return invalidCode();
+        else if (!valid.items![1].boolValue) {
+            sendLoginSMS(params.phone!, optionalNewCode, identity.sourceIp)
+            return expiredCode();
+        } else {
+            return {
+                statusCode: 200,
+                body: JSON.stringify({
+                    id: orderID.toString("hex"),
+                    price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
+                    redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
+                    products: result.resultSets[0].rows!.map((value) => {
+                        return {
+                            Title: value.items![0].textValue,
+                            ImageURI: value.items![1].textValue,
+                            Price: priceToNumber(value.items![2].uint64Value!),
+                            quantity: value.items![3].uint32Value
+                        }
+                    })
+                })
+            }
+        }
+    }
+
+    /**
+     * This function should be called if code and JWT token are both null
+     */
+    async function _orderNotAuthorized(client: TableClient, phone: string, identity: Identity) {
+        await Auth._addUser(client, phone, identity)
         return {
-            id: id.toString("hex"),
-            phone: params.phone,
-            time: params.time,
-            price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
-            paymentMethod: params.paymentMethod,
-            redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
-
-            products: result.resultSets[0].rows!.map((value) => {
-                const title = value.items![0].textValue
-                const imageURI = value.items![1].textValue
-                const price = value.items![2].uint64Value
-                const quantity = value.items![3].uint32Value
-
-                return {
-                    Price: priceToNumber(price!),
-                    quantity: quantity,
-                    ImageURI: imageURI,
-                    Title: title
-                }
+            statusCode: 401,
+            body: JSON.stringify({
+                code: 1,
+                message: "Code sent"
             })
         }
     }
 
-    public async getOrder(params: { orderID?: string }, context: AuthorizedContext): Promise<{
-        phone: string;
-        paymentMethod: string,
-        time: number,
-        price: number;
-        products: {
-            ImageURI: string;
-            quantity: number;
-            Price: number;
-            Title: string
-        }[]
-    } | null> {
-        loggable("getOrder", context)
-        authRequired("getOrder", context)
-        requiredArgument("orderID", params.orderID)
+    export async function getOrder(client: TableClient, params: { orderID?: string }, headers: Headers): Promise<ApiResponse> {
+        if (!params.orderID) return argumentIsRequired("orderID")
 
-        return await this.client.withSessionRetry(async (session) => {
-            const result = await session.executeQuery(
+        const result = await client.withSessionRetry(async (session) => {
+            return await session.executeQuery(
                 await session.prepareQuery(OrderQueries.getOrder),
                 OrderQueries.createGetOrderParams(Buffer.from(params.orderID!, "hex")),
                 staleReadOnly
             )
+        })
 
-            const order = result.resultSets[0].rows![0];
-            const userID = order.items![4].bytesValue!;
+        const order = result.resultSets[0].rows![0];
+        const userID = order.items![4].bytesValue!;
 
-            // If userID in context == userID of order
-            if (Buffer.from(userID).equals(context.userID!)) {
+        if (headers.Authorization?.startsWith("Bearer")) {
+            const verify = Auth._verify(headers.Authorization.substring(7, headers.Authorization.length));
+            if (!verify) return {statusCode: 401};
+
+            if (Buffer.from(userID).equals(verify.id)) {
                 return {
-                    paymentMethod: getPaymentMethodByNumberID(order.items![7].uint32Value!) ?? "none",
-                    phone: order.items![5].textValue!,
-                    price: priceToNumber(order.items![3].uint64Value!),
-                    time: order.items![6].uint32Value!,
-                    products: result.resultSets[1].rows!.map(value => {
-                        return {
-                            Price: priceToNumber(value.items![0].uint64Value!),
-                            quantity: value.items![1].uint32Value!,
-                            ImageURI: value.items![2].textValue!,
-                            Title: value.items![3].textValue!
-                        }
+                    statusCode: 200,
+                    body: JSON.stringify({
+                        paymentMethod: getPaymentMethodByNumberID(order.items![7].uint32Value!) ?? "none",
+                        phone: order.items![5].textValue!,
+                        price: priceToNumber(order.items![3].uint64Value!),
+                        time: order.items![6].uint32Value!,
+                        products: result.resultSets[1].rows!.map(value => {
+                            return {
+                                Price: priceToNumber(value.items![0].uint64Value!),
+                                quantity: value.items![1].uint32Value!,
+                                ImageURI: value.items![2].textValue!,
+                                Title: value.items![3].textValue!
+                            }
+                        })
                     })
                 };
-            }
-            return null;
-        })
+            } else return {statusCode: 403}
+        } else return {statusCode: 401}
     }
 }
+
+export default OrderManager;
