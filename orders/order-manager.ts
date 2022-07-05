@@ -9,6 +9,7 @@ import paymentMethods, {getPaymentMethodByNumberID} from "../paymentMethods";
 import priceToNumber from "../utils/priceToNumber";
 import staleReadOnly from "../stale-readonly";
 import {sendLoginSMS} from "../sms";
+import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
 
 namespace OrderManager {
     import SMS_CODE_RANDMIN = Auth.SMS_CODE_RANDMIN;
@@ -40,7 +41,7 @@ namespace OrderManager {
         paymentMethod?: string,
         phone?: string,
         address?: string,
-        time?: number,
+        time?: TimeRange,
         code?: number // If client haven't auth token, they may send code and API will return JWT token & add order in one request
     }
 
@@ -68,6 +69,9 @@ namespace OrderManager {
         if (!params.address) return argumentIsRequired("address")
         if (!params.time) return argumentIsRequired("time")
 
+        if (!params.time.startDate) return argumentIsRequired("time")
+        if (!params.time.endDate) return argumentIsRequired("time")
+
         if (params.products!.length === 0) return cartIsEmpty();
 
         const paymentMethod: number = paymentMethods[params.paymentMethod]
@@ -92,7 +96,8 @@ namespace OrderManager {
                         verify.id, id,
                         params.phone!,
                         paymentMethod,
-                        params.time!)
+                        params.time!
+                    )
                 )
             })
 

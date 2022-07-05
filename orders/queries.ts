@@ -1,6 +1,7 @@
 import {OrderItem} from "../types/product";
 import {Types} from "ydb-sdk";
 import {getCurrentDatetime, SMS_CODE_EXPIRATION_TIME} from "../utils/datetime";
+import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
 
 export namespace OrderQueries {
     // language=SQL
@@ -9,7 +10,8 @@ export namespace OrderQueries {
     DECLARE $order_id AS String;
     DECLARE $user_id AS String;
     DECLARE $phone AS Utf8;
-    DECLARE $d_time AS Datetime;
+    DECLARE $from_time AS Datetime;
+    DECLARE $to_time AS Datetime;
     DECLARE $payment_method AS Uint8;
     
     $table = (
@@ -31,7 +33,7 @@ export namespace OrderQueries {
     INNER JOIN $table AS prices
     ON (prices.id==order_item.id);
     
-    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, delivery_time)
+    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, from_time, to_time)
     SELECT $order_id as id,
            false as hasPaid,
            false as isCompleted,
@@ -39,12 +41,17 @@ export namespace OrderQueries {
            SUM(column0) as price,
            $phone as phone,
            $payment_method as payment_method,
-           $d_time as delivery_time
+           $from_time as from_time,
+           $to_time as to_time
     FROM $table;
     
     SELECT title, image_uri, price, quantity FROM $table;`
 
-    export function createInsertOrderParams(items: Array<OrderItem>, userID: Buffer, orderID: Buffer, phone: string, paymentMethod: number, time: number) {
+    export function createInsertOrderParams(items: Array<OrderItem>,
+                                            userID: Buffer, orderID: Buffer,
+                                            phone: string,
+                                            paymentMethod: number,
+                                            range: TimeRange) {
         return {
             "$items": createItemsParams(items, orderID),
             "$order_id": {
@@ -71,10 +78,16 @@ export namespace OrderQueries {
                     uint32Value: paymentMethod
                 }
             },
-            "$d_time": {
+            "$from_time": {
                 type: Types.DATETIME,
                 value: {
-                    uint32Value: time
+                    uint32Value: range.startDate
+                }
+            },
+            "$to_time": {
+                type: Types.DATETIME,
+                value: {
+                    uint32Value: range.endDate
                 }
             }
         }
@@ -147,7 +160,8 @@ export namespace OrderQueries {
     DECLARE $random_code AS Uint32; /* This code is required if old code was expired */
     DECLARE $currentDatetime AS Datetime;
     
-    DECLARE $d_time AS Datetime;
+    DECLARE $from_time AS Datetime;
+    DECLARE $to_time AS Datetime;
     DECLARE $payment_method AS Uint8;
         
     $user = (
@@ -197,7 +211,7 @@ export namespace OrderQueries {
     WHERE $is_valid;
     
     $user_id = SELECT id FROM $user;
-    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, delivery_time)
+    UPSERT INTO orders(id, hasPaid, isCompleted, user_id, price, phone, payment_method, from_time, to_time)
     SELECT $order_id as id,
            false as hasPaid,
            false as isCompleted,
@@ -205,7 +219,8 @@ export namespace OrderQueries {
            SUM(column0) as price,
            $phone as phone,
            $payment_method as payment_method,
-           $d_time as delivery_time
+           $from_time as from_time,
+           $to_time as to_time
     FROM $table
     WHERE $is_valid;
     
@@ -218,7 +233,7 @@ export namespace OrderQueries {
                                                         orderID: Buffer,
                                                         phone: string,
                                                         paymentMethod: number,
-                                                        time: number,
+                                                        range: TimeRange,
                                                         code: number,
                                                         randomCode: number) {
         return {
@@ -247,10 +262,16 @@ export namespace OrderQueries {
                     uint32Value: paymentMethod
                 }
             },
-            "$d_time": {
+            "$from_time": {
                 type: Types.DATETIME,
                 value: {
-                    uint32Value: time
+                    uint32Value: range.startDate
+                }
+            },
+            "$to_time": {
+                type: Types.DATETIME,
+                value: {
+                    uint32Value: range.endDate
                 }
             },
             "$sms_code": {
