@@ -10,10 +10,12 @@ import priceToNumber from "../utils/priceToNumber";
 import staleReadOnly from "../stale-readonly";
 import {sendLoginSMS} from "../sms";
 import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
+import {sign} from "jsonwebtoken";
 
-namespace OrderManager {
+export namespace OrderManager {
     import SMS_CODE_RANDMIN = Auth.SMS_CODE_RANDMIN;
     import SMS_CODE_RANDMAX = Auth.SMS_CODE_RANDMAX;
+    import SECRET_KEY = Auth.SECRET_KEY;
 
     function argumentIsRequired(name: string): ApiResponse {
         return {
@@ -154,6 +156,11 @@ namespace OrderManager {
             return {
                 statusCode: 200,
                 body: JSON.stringify({
+                    token: sign(
+                        {
+                            id: Buffer.from(valid.items![2].bytesValue!).toString("hex"),
+                            phone: params.phone
+                        }, SECRET_KEY),
                     id: orderID.toString("hex"),
                     price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
                     redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
@@ -206,10 +213,13 @@ namespace OrderManager {
                 return {
                     statusCode: 200,
                     body: JSON.stringify({
-                        paymentMethod: getPaymentMethodByNumberID(order.items![7].uint32Value!) ?? "none",
+                        paymentMethod: getPaymentMethodByNumberID(order.items![8].uint32Value!) ?? "none",
                         phone: order.items![5].textValue!,
                         price: priceToNumber(order.items![3].uint64Value!),
-                        time: order.items![6].uint32Value!,
+                        time: {
+                            startDate: order.items![6].uint32Value!,
+                            endDate: order.items![6].uint32Value!
+                        },
                         products: result.resultSets[1].rows!.map(value => {
                             return {
                                 Price: priceToNumber(value.items![0].uint64Value!),

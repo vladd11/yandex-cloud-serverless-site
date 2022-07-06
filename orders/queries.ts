@@ -122,9 +122,8 @@ export namespace OrderQueries {
     export const getOrder = `
     DECLARE $id AS String;
     
-    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone, delivery_time, payment_method
+    SELECT orders.id, hasPaid, isCompleted, price, user_id, phone, from_time, to_time, payment_method
     FROM orders
-    
     WHERE orders.id=$id;
     
     SELECT 
@@ -225,7 +224,7 @@ export namespace OrderQueries {
     WHERE $is_valid;
     
     SELECT title, image_uri, price, quantity FROM $table;
-    SELECT same, not_expired FROM $user;
+    SELECT same, not_expired, id FROM $user;
     `;
 
     export function createInsertOrderAndCheckCodeParams(items: Array<OrderItem>,

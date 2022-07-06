@@ -29,7 +29,7 @@ namespace Auth {
     export const SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1);
     export const SMS_CODE_RANDMAX = (10 ** SMS_CODE_LENGTH) - 1;
 
-    const SECRET_KEY = process.env.SECRET_KEY ?? secretKeyNotDefined()
+    export const SECRET_KEY = process.env.SECRET_KEY ?? secretKeyNotDefined()
 
     // This is Russian phone length.
     // TODO: Need to add support for another country numbers
