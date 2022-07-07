@@ -4,7 +4,7 @@ import {AuthQueries} from "./queries";
 import crypto from "crypto";
 import {ApiResponse, Headers, Identity} from "../types/api";
 
-import {sign, verify} from "jsonwebtoken";
+import {sign} from "jsonwebtoken";
 import {sendLoginSMS} from "../sms";
 import {getCurrentDatetime, getExpirationDatetime} from "../utils/datetime";
 
@@ -24,17 +24,17 @@ export function expiredCode(): ApiResponse {
     return {statusCode: 401, body: JSON.stringify({code: 1003, message: "Expired SMS code"})}
 }
 
+const SMS_CODE_LENGTH: number = parseInt(process.env.SMS_CODE_LENGTH ?? "6");
+export const SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1);
+export const SMS_CODE_RANDMAX = (10 ** SMS_CODE_LENGTH) - 1;
+
+export const SECRET_KEY = process.env.SECRET_KEY ?? secretKeyNotDefined()
+
+// This is Russian phone length.
+// TODO: Need to add support for another country numbers
+const PHONE_LENGTH = 12;
+
 namespace Auth {
-    const SMS_CODE_LENGTH: number = parseInt(process.env.SMS_CODE_LENGTH ?? "6");
-    export const SMS_CODE_RANDMIN = 10 ** (SMS_CODE_LENGTH - 1);
-    export const SMS_CODE_RANDMAX = (10 ** SMS_CODE_LENGTH) - 1;
-
-    export const SECRET_KEY = process.env.SECRET_KEY ?? secretKeyNotDefined()
-
-    // This is Russian phone length.
-    // TODO: Need to add support for another country numbers
-    const PHONE_LENGTH = 12;
-
     /**
      * Send SMS code & update it on DB.
      *
@@ -142,21 +142,6 @@ namespace Auth {
                 }
             })
         } else return {statusCode: 401}
-    }
-
-    export function _verify(token: string) {
-        try {
-            let payload: any = verify(token, SECRET_KEY)
-            if (typeof payload === "string") payload = JSON.parse(payload)
-
-            return {
-                id: Buffer.from(payload.id, "hex"),
-                phone: payload.phone
-            }
-        } catch (e) {
-            console.error(e)
-            return null;
-        }
     }
 }
 

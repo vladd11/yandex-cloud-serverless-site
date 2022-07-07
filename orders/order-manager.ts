@@ -1,8 +1,8 @@
 import {TableClient, Session} from "ydb-sdk/build/cjs/table";
 
+import Auth, {expiredCode, invalidCode, SECRET_KEY, SMS_CODE_RANDMAX, SMS_CODE_RANDMIN} from "../auth/auth";
 import {ApiResponse, Headers, Identity} from "../types/api";
 import {OrderItem} from "../types/product";
-import Auth, {expiredCode, invalidCode} from "../auth/auth";
 import {OrderQueries} from "./queries";
 import crypto from "crypto";
 import paymentMethods, {getPaymentMethodByNumberID} from "../paymentMethods";
@@ -11,12 +11,9 @@ import staleReadOnly from "../stale-readonly";
 import {sendLoginSMS} from "../sms";
 import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
 import {sign} from "jsonwebtoken";
+import parseAuthHeader from "../auth/parseAuthHeader";
 
 export namespace OrderManager {
-    import SMS_CODE_RANDMIN = Auth.SMS_CODE_RANDMIN;
-    import SMS_CODE_RANDMAX = Auth.SMS_CODE_RANDMAX;
-    import SECRET_KEY = Auth.SECRET_KEY;
-
     function argumentIsRequired(name: string): ApiResponse {
         return {
             statusCode: 400,
@@ -87,42 +84,40 @@ export namespace OrderManager {
             value.orderItemID = crypto.randomBytes(16)
         })
 
-        if (headers.Authorization?.startsWith("Bearer")) {
-            const verify = Auth._verify(headers.Authorization.substring(7, headers.Authorization.length));
-            if (!verify) return _orderNotAuthorized(client, params.phone, identity)
-
-            const result = await client.withSessionRetry(async (session: Session) => {
-                return await session.executeQuery(
-                    await session.prepareQuery(OrderQueries.insertOrder),
-                    OrderQueries.createInsertOrderParams(params.products!,
-                        verify.id, id,
-                        params.phone!,
-                        paymentMethod,
-                        params.time!
-                    )
-                )
-            })
-
-            return {
-                statusCode: 200,
-                body: JSON.stringify({
-                    id: id.toString("hex"),
-                    price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
-                    redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
-                    products: result.resultSets[0].rows!.map((value) => {
-                        return {
-                            Title: value.items![0].textValue,
-                            ImageURI: value.items![1].textValue,
-                            Price: priceToNumber(value.items![2].uint64Value!),
-                            quantity: value.items![3].uint32Value
-                        }
-                    })
-                })
-            }
-        } else {
+        const user = parseAuthHeader(headers.Authorization);
+        if (!user) {
             if (params.code) {
                 return _orderCodeAuthorized(client, params, paymentMethod, identity)
             } else return _orderNotAuthorized(client, params.phone, identity)
+        }
+
+        const result = await client.withSessionRetry(async (session: Session) => {
+            return await session.executeQuery(
+                await session.prepareQuery(OrderQueries.insertOrder),
+                OrderQueries.createInsertOrderParams(params.products!,
+                    user.id, id,
+                    params.phone!,
+                    paymentMethod,
+                    params.time!
+                )
+            )
+        })
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                id: id.toString("hex"),
+                price: priceToNumber(result.resultSets[0].rows![0].items![2].uint64Value!),
+                redirect: (params.paymentMethod === "cash") ? null : "https://google.com",
+                products: result.resultSets[0].rows!.map((value) => {
+                    return {
+                        Title: value.items![0].textValue,
+                        ImageURI: value.items![1].textValue,
+                        Price: priceToNumber(value.items![2].uint64Value!),
+                        quantity: value.items![3].uint32Value
+                    }
+                })
+            })
         }
     }
 
@@ -206,10 +201,10 @@ export namespace OrderManager {
         const userID = order.items![4].bytesValue!;
 
         if (headers.Authorization?.startsWith("Bearer")) {
-            const verify = Auth._verify(headers.Authorization.substring(7, headers.Authorization.length));
-            if (!verify) return {statusCode: 401};
+            const user = parseAuthHeader(headers.Authorization);
+            if (!user) return {statusCode: 401};
 
-            if (Buffer.from(userID).equals(verify.id)) {
+            if (Buffer.from(userID).equals(user.id)) {
                 return {
                     statusCode: 200,
                     body: JSON.stringify({

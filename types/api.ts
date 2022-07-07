@@ -13,7 +13,10 @@ export interface ApiResponse {
     body?: string
 }
 
-export type Headers = { [key: string]: string }
+export type Headers = {
+    Authorization?: string,
+    [key: string]: string | undefined,
+}
 export type Identity = {
     sourceIp: string,
     userAgent: string,

@@ -17,7 +17,7 @@ function makeEvent(path, method, req) {
         headers: {
             Authorization: req.get("Authorization")
         },
-        params: req.query,
+        params: {...req.query, ...req.params},
         requestContext: {
             identity: {
                 sourceIp: "127.0.0.1",
@@ -58,6 +58,18 @@ app.post('/order', async (req, res) => {
 
 app.get('/order/:id', async (req, res) => {
     apply(await index.handler(makeEvent(`/order/${req.params.id}`, "getOrder", req)), res);
+})
+
+app.post('/notifications/enable', async (req, res) => {
+    apply(await index.handler(makeEvent(`/notifications/enable`, "enableNotifications", req)), res);
+})
+
+app.post('/notifications/disable', async (req, res) => {
+    apply(await index.handler(makeEvent(`/notifications/disable`, "disableNotifications", req)), res);
+})
+
+app.get('/notifications/status/:token', async (req, res) => {
+    apply(await index.handler(makeEvent(`/notifications/status/${req.params.token}`, "statusNotifications", req)), res);
 })
 
 app.listen(port, () => {

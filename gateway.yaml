@@ -1,5 +1,3 @@
-# Please replace d5domnlu7d7sjcv50dlt with your API Gateway ID
-# Then replace d4e3ias0cj75nn52701f with your function ID
 openapi: 3.0.0
 info:
   title: Sample API
@@ -250,3 +248,61 @@ paths:
         function_id: d4e3ias0cj75nn52701f
         context:
           method: resendCode
+  /notifications/enable:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+              properties:
+                token:
+                  type: string
+            example:
+              token: "eZ0YyTMe2lD76H2i806Q0q:APA91bEfBjOSpzWUoTxOesEaQQmmwDev0EoeLCtMxj14QWgqwW7Rcc6QJVGP71F1z5KyrVmG2MZHm8Hrhsgkuxv7xonOLyQX4ntE4Ur2zHZy9rIofAhWHE-AgUfYQJ3vVKP77JKPfj7d"
+      responses:
+        '200':
+          description: OK
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: enableNotifications
+  /notifications/disable:
+    post:
+      responses:
+        '200':
+          description: OK
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: disableNotifications
+  /notifications/status/{token}:
+    get:
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ enabled ]
+                properties:
+                  enabled:
+                    type: boolean
+      parameters:
+        - in: path
+          name: token
+          schema:
+            type: string
+          required: true
+          description: "FSM token, should be taken from device using getToken method"
+      x-yc-apigateway-integration:
+        type: cloud-functions
+        function_id: d4e3ias0cj75nn52701f
+        context:
+          method: statusNotifications

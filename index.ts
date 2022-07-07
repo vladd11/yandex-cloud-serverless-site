@@ -2,8 +2,11 @@ import {Driver, getCredentialsFromEnv} from "ydb-sdk";
 
 import Event from "./types/event";
 import Auth from "./auth/auth";
-import {Request, Api} from "./types/api";
+import {Api} from "./types/api";
 import OrderManager from "./orders/order-manager";
+import disableNotifications from "./notifications/disable/main";
+import enableNotifications from "./notifications/enable/main";
+import getNotificationStatus from "./notifications/status/main";
 
 
 const authService = getCredentialsFromEnv();
@@ -28,14 +31,18 @@ const methods: Api = {
     sendCode: (request) => Auth.sendCodeToLogin(driver.tableClient, request.body, request.headers, request.identity),
     login: (request) => Auth.login(driver.tableClient, request.body, request.identity),
 
-    order: (request: Request) => OrderManager.order(driver.tableClient, request.body, request.headers, request.identity),
-    getOrder: (request: Request) => {
+    order: (request) => OrderManager.order(driver.tableClient, request.body, request.headers, request.identity),
+    getOrder: (request) => {
         const path = request.path.split("/")
         return OrderManager.getOrder(driver.tableClient, {
             orderID: path[path.length - 1]
         }, request.headers)
     },
-    resendCode: (request: Request) => Auth.sendCodeToLogin(driver.tableClient, request.body, request.headers, request.identity)
+    resendCode: (request) => Auth.sendCodeToLogin(driver.tableClient, request.body, request.headers, request.identity),
+
+    enableNotifications: (request) => enableNotifications(driver.tableClient, request.body, request.headers),
+    disableNotifications: (request) => disableNotifications(driver.tableClient, request.headers),
+    statusNotifications: (request) => getNotificationStatus(driver.tableClient, request.params.token, request.headers)
 }
 
 module.exports.handler = async function (event: Event) {
@@ -56,7 +63,7 @@ module.exports.handler = async function (event: Event) {
         identity: identity
     });
 
-    if(result) {
+    if (result) {
         return {
             statusCode: result.statusCode,
             body: result.body ?? "",
