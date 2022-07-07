@@ -4,7 +4,7 @@ import {SECRET_KEY} from "./auth";
 export default function verifyAuthHeader(value?: string): {
     id: Buffer,
     phone: string
-} | null {
+} | undefined {
     if(value?.startsWith("Bearer")) {
         try {
             let payload: any = verify(value.substring(7, value.length), SECRET_KEY)
@@ -16,7 +16,7 @@ export default function verifyAuthHeader(value?: string): {
             }
         } catch (e) {
             console.error(e)
-            return null;
+            return undefined;
         }
-    } else return null
+    } else return undefined
 }
