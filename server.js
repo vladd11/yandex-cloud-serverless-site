@@ -72,6 +72,6 @@ app.get('/notifications/status/:token', async (req, res) => {
     apply(await index.handler(makeEvent(`/notifications/status/${req.params.token}`, "statusNotifications", req)), res);
 })
 
-app.listen(port, () => {
+app.listen(port, "0.0.0.0", () => {
     console.log(`Example app listening on port ${port}`)
 })
