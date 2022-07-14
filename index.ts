@@ -46,8 +46,9 @@ const methods: Api = {
 }
 
 const cors = {
-    "Access-Control-Allow-Origin": "gatsby-test-nuk.pages.dev",
-    "Access-Control-Max-Age": "7200"
+    "Access-Control-Allow-Origin": "https://gatsby-test-nuk.pages.dev",
+    "Access-Control-Max-Age": "86400",
+    "Access-Control-Allow-Headers": "*"
 }
 
 module.exports.handler = async function (event: Event) {

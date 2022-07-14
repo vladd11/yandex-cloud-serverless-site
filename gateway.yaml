@@ -6,6 +6,19 @@ servers:
   - url: https://d5domnlu7d7sjcv50dlt.apigw.yandexcloud.net
 paths:
   /send-code:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     post:
       requestBody:
         required: true
@@ -26,6 +39,19 @@ paths:
         context:
           method: sendCode
   /login:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     post:
       requestBody:
         content:
@@ -83,6 +109,19 @@ paths:
         context:
           method: login
   /order:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: 'https://gatsby-test-nuk.pages.dev'
+          Access-Control-Max-Age: '86400'
+          Access-Control-Allow-Headers: '*'
+        content:
+          'text/plain': ''
+      responses:
+        '200':
+          description: 'OK'
     post:
       description: >
         Add new order to database. It's will be OK even Authorization headers
@@ -174,6 +213,25 @@ paths:
         context:
           method: order
   /order/{id}:
+    options:
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     get:
       parameters:
         - in: path
@@ -226,6 +284,19 @@ paths:
         context:
           method: getOrder
   /resend-code:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     post:
       requestBody:
         required: true
@@ -249,6 +320,19 @@ paths:
         context:
           method: resendCode
   /notifications/enable:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     post:
       requestBody:
         required: true
@@ -272,6 +356,19 @@ paths:
         context:
           method: enableNotifications
   /notifications/disable:
+    options:
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     post:
       responses:
         '200':
@@ -282,6 +379,25 @@ paths:
         context:
           method: disableNotifications
   /notifications/status/{token}:
+    options:
+      parameters:
+        - in: path
+          name: token
+          schema:
+            type: string
+          required: true
+      x-yc-apigateway-integration:
+        type: dummy
+        http_code: 200
+        http_headers:
+          Access-Control-Allow-Origin: "https://gatsby-test-nuk.pages.dev"
+          Access-Control-Max-Age: "86400"
+          Access-Control-Allow-Headers: "*"
+        content:
+          "text/plain": ""
+      responses:
+        '200':
+          description: 'OK'
     get:
       responses:
         '200':
