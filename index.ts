@@ -45,6 +45,11 @@ const methods: Api = {
     statusNotifications: (request) => getNotificationStatus(driver.tableClient, request.params.token, request.headers)
 }
 
+const cors = {
+    "Access-Control-Allow-Origin": "gatsby-test-nuk.pages.dev",
+    "Access-Control-Max-Age": "7200"
+}
+
 module.exports.handler = async function (event: Event) {
     if (!isReady) await connect();
 
@@ -68,13 +73,15 @@ module.exports.handler = async function (event: Event) {
             statusCode: result.statusCode,
             body: result.body ?? "",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                ...cors
             }
         }
     } else {
         return {
             statusCode: 404,
-            body: ""
+            body: "",
+            headers: cors
         }
     }
 }
