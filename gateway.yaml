@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  title: Sample API
+  title: YC Serverless site API
   version: 1.0.0
 servers:
   - url: https://d5domnlu7d7sjcv50dlt.apigw.yandexcloud.net

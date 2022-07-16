@@ -45,10 +45,15 @@ const methods: Api = {
     statusNotifications: (request) => getNotificationStatus(driver.tableClient, request.params.token, request.headers)
 }
 
-const cors = {
-    "Access-Control-Allow-Origin": "https://gatsby-test-nuk.pages.dev",
+const cors: { [key: string]: string } = {
     "Access-Control-Max-Age": "86400",
     "Access-Control-Allow-Headers": "*"
+}
+
+if (process.env.DEBUG) {
+    cors["Access-Control-Allow-Origin"] = "localhost:8000"
+} else if(process.env.HOST) {
+    cors["Access-Control-Allow-Origin"] = process.env.HOST;
 }
 
 module.exports.handler = async function (event: Event) {
