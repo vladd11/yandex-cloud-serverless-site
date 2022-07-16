@@ -51,7 +51,7 @@ const cors: { [key: string]: string } = {
 }
 
 if (process.env.DEBUG) {
-    cors["Access-Control-Allow-Origin"] = "localhost:8000"
+    cors["Access-Control-Allow-Origin"] = "http://localhost:8000"
 } else if(process.env.HOST) {
     cors["Access-Control-Allow-Origin"] = process.env.HOST;
 }
