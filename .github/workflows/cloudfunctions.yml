@@ -21,5 +21,5 @@ jobs:
           memory: '128'
           entrypoint: 'index.handler'
           service_account: ${{ secrets.SERVICE_ACCOUNT_ID }}
-          environment: SECRET_KEY=${{ secrets.SECRET_KEY }}},DATABASE=${{ secrets.DATABASE }},HOST=https://gatsby-test-nuk.pages.dev/
+          environment: SECRET_KEY=${{ secrets.SECRET_KEY }}},DATABASE=${{ secrets.DATABASE }},HOST=https://gatsby-test-nuk.pages.dev
           source: './build/'
