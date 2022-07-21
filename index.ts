@@ -9,7 +9,6 @@ import enableNotifications from "./notifications/enable/main";
 import getNotificationStatus from "./notifications/status/main";
 import cors from "./cors";
 
-
 const authService = getCredentialsFromEnv();
 const driver = new Driver({
     endpoint: process.env.ENDPOINT ?? "grpcs://ydb.serverless.yandexcloud.net:2135",
