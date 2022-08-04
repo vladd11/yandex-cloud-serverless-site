@@ -1,23 +1,32 @@
 {
   "devDependencies": {
+    "@types/archiver": "^5.3.1",
+    "@types/inquirer": "^8.2.1",
     "@types/jest": "^28.1.4",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/node": "^18.0.0",
+    "@types/node-fetch": "^2.6.2",
     "@types/uuid": "^8.3.4",
+    "@yandex-cloud/nodejs-sdk": "^2.1.1",
+    "archiver": "^5.3.1",
     "body-parser": "^1.20.0",
+    "chalk": "^4.1.2",
     "cors": "^2.8.5",
     "esbuild": "^0.14.48",
     "express": "^4.18.1",
-    "ts-node": "^10.8.1"
+    "inquirer": "^8.2.3",
+    "node-fetch": "^2.6.7",
+    "ts-node": "^10.9.1"
   },
   "scripts": {
     "run": "node main.ts",
     "build": "node build.js"
   },
   "dependencies": {
-    "firebase": "^9.8.4",
     "jsonwebtoken": "^8.5.1",
-    "uuid": "^8.3.2",
     "ydb-sdk": "^3.3.2"
+  },
+  "resolutions": {
+    "@yandex-cloud/nodejs-sdk/nice-grpc/@grpc/grpc-js": "1.6.0"
   }
 }

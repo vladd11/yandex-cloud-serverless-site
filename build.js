@@ -2,17 +2,23 @@ const esbuild = require('esbuild')
 const pkg = require('./package.json')
 const fs = require("fs");
 
-esbuild.buildSync({
-    bundle: true,
-    minify: true,
+module.exports = function () {
+    esbuild.buildSync({
+        bundle: true,
+        minify: true,
 
-    platform: "node",
-    external: Object.keys(pkg.dependencies),
+        platform: "node",
+        external: Object.keys(pkg.dependencies),
 
-    entryPoints: ['index.ts'],
-    outfile: "build/index.js",
-    sourcemap: "external"
-})
+        entryPoints: ['index.ts'],
+        outfile: "build/index.js",
+        sourcemap: "external"
+    })
 
-fs.copyFileSync("package.json", "build/package.json")
-fs.copyFileSync("package-lock.json", "build/package-lock.json")
+    fs.copyFileSync("package.json", "build/package.json")
+    fs.copyFileSync("package-lock.json", "build/package-lock.json")
+}
+
+if (require.main === module) {
+    module.exports();
+}
