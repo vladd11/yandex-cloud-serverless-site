@@ -16,12 +16,6 @@ import {randomBytes, randomInt} from "crypto";
 export async function setupFunction(session: Session, folderId: string, name: string, database: Database, account: ServiceAccount): Promise<Function> {
     build()
 
-    const client = session.client(serviceClients.FunctionServiceClient)
-    const func = Function.decode((await waitForOperation(await client.create(CreateFunctionRequest.fromPartial({
-        folderId: folderId,
-        name: name,
-    })), session)).response!.value)
-
     const output = fs.createWriteStream("./build.zip");
     const archive = archiver("zip")
     archive.pipe(output);
@@ -32,6 +26,12 @@ export async function setupFunction(session: Session, folderId: string, name: st
 
     await archive.finalize()
     output.close()
+
+    const client = session.client(serviceClients.FunctionServiceClient)
+    const func = Function.decode((await waitForOperation(await client.create(CreateFunctionRequest.fromPartial({
+        folderId: folderId,
+        name: name,
+    })), session)).response!.value)
 
     const secret = randomBytes(randomInt(32, 56)).toString("base64")
 

@@ -122,7 +122,7 @@ inquirer.prompt([
         await setupFunction(session, folderId, name, db, account);
 
         console.info(`\nDone.
-  API endpoint: ${gateway.attachedDomains.map(value => value.domain)}`)
+  API endpoint: ${gateway.domain}`)
         process.exit()
     }).catch(console.error)
 }).catch(console.error)
