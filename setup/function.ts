@@ -13,7 +13,7 @@ import archiver from "archiver";
 import * as fs from "fs";
 import {randomBytes, randomInt} from "crypto";
 
-export async function setupFunction(session: Session, folderId: string, name: string, database: Database, account: ServiceAccount) {
+export async function setupFunction(session: Session, folderId: string, name: string, database: Database, account: ServiceAccount): Promise<Function> {
     build()
 
     const client = session.client(serviceClients.FunctionServiceClient)
@@ -35,7 +35,7 @@ export async function setupFunction(session: Session, folderId: string, name: st
 
     const secret = randomBytes(randomInt(32, 56)).toString("base64")
 
-    client.createVersion(CreateFunctionVersionRequest.fromPartial({
+    await waitForOperation(await client.createVersion(CreateFunctionVersionRequest.fromPartial({
         functionId: func.id,
         content: fs.readFileSync("./build.zip"),
 
@@ -54,5 +54,6 @@ export async function setupFunction(session: Session, folderId: string, name: st
         runtime: "nodejs16",
         serviceAccountId: account.id,
         executionTimeout: Duration.fromPartial({seconds: 3})
-    }))
+    })), session);
+    return func;
 }

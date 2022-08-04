@@ -10,6 +10,8 @@ export async function listClouds(session: Session): Promise<Cloud[]> {
     return (await session.client(serviceClients.CloudServiceClient).list(ListCloudsRequest.fromPartial({}))).clouds
 }
 
-export async function listFolders(session: Session): Promise<Folder[]> {
-    return  (await session.client(serviceClients.FolderServiceClient).list(ListFoldersRequest.fromPartial({}))).folders
+export async function listFolders(session: Session, cloudId: string): Promise<Folder[]> {
+    return (await session.client(serviceClients.FolderServiceClient).list(ListFoldersRequest.fromPartial({
+        cloudId: cloudId
+    }))).folders
 }

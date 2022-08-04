@@ -20,6 +20,7 @@
   },
   "scripts": {
     "run": "node main.ts",
+    "setup": "node --require ts-node/register setup.ts",
     "build": "node build.js"
   },
   "dependencies": {

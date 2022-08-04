@@ -58,10 +58,11 @@ inquirer.prompt([
             "You have multiple clouds. Choice one where the site will be hosted\n")).id
     } else {
         cloudId = clouds[0].id;
+        console.info(`\nFound one cloud ${cloudId}`)
     }
 
     let folderId: string;
-    const folders = await listFolders(session)
+    const folders = await listFolders(session, cloudId)
     if (folders.length > 1) {
         folderId = (await choiceObject<Folder>(folders, (folder) => {
             return `${folder.id}
@@ -71,6 +72,7 @@ inquirer.prompt([
         }, "You have multiple folders. Choice one where the site will be hosted\n")).id
     } else {
         folderId = folders[0].id;
+        console.info(`Found one folder ${folderId}\n`)
     }
 
     let databases: Database[];
@@ -80,7 +82,6 @@ inquirer.prompt([
         displayedDatabaseNames = [...databases.map((database) => {
             return `${chalk.white(getDatabasePath(cloudId, database))} - ${Database_Status[database.status]}`;
         }), "Create new database"]
-        return displayedDatabaseNames;
     } catch (e: any) {
         handleSDKError(e)
     }
@@ -115,12 +116,13 @@ inquirer.prompt([
         }
 
         console.info("Setting up API Gateway")
-        await setupAPIGateway(session, folderId, name, fs.readFileSync("gateway.yaml", "utf-8"))
+        const gateway = await setupAPIGateway(session, folderId, name, fs.readFileSync("gateway.yaml", "utf-8"))
 
         console.info("Setting up Cloud Function")
-        await setupFunction(session, folderId, name, db, account)
+        await setupFunction(session, folderId, name, db, account);
 
-        console.info("\nDone")
+        console.info(`\nDone.
+  API endpoint: ${gateway.attachedDomains.map(value => value.domain)}`)
         process.exit()
-    })
-})
+    }).catch(console.error)
+}).catch(console.error)
