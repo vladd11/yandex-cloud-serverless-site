@@ -5,11 +5,11 @@ import {ApiResponse, Headers, Identity} from "../types/api";
 import {OrderItem} from "../types/product";
 import {OrderQueries} from "./queries";
 import crypto from "crypto";
-import paymentMethods, {getPaymentMethodByNumberID} from "../paymentMethods";
+import paymentMethods, {getPaymentMethodByNumberID} from "../../paymentMethods";
 import priceToNumber from "../utils/priceToNumber";
-import staleReadOnly from "../stale-readonly";
-import {sendLoginSMS} from "../sms";
-import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
+import staleReadOnly from "../../stale-readonly";
+import {sendLoginSMS} from "../../sms";
+import {TimeRange} from "../../gatsby-material-e-commerce/src/currentDateTime";
 import {sign} from "jsonwebtoken";
 import parseAuthHeader from "../auth/parseAuthHeader";
 

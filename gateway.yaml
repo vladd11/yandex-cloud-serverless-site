@@ -3,7 +3,7 @@ info:
   title: YC Serverless site API
   version: 1.0.0
 servers:
-  - url: https://d5domnlu7d7sjcv50dlt.apigw.yandexcloud.net
+  - url: https://d5domnlu7d7sjcv50dlt.apigw.yandexcloud.net # CHANGE THIS ADDRESS TO YOUR SERVER ADDRESS. It's development server of repository author.
 paths:
   /send-code:
     options:

@@ -7,7 +7,7 @@ import OrderManager from "./orders/order-manager";
 import disableNotifications from "./notifications/disable/main";
 import enableNotifications from "./notifications/enable/main";
 import getNotificationStatus from "./notifications/status/main";
-import cors from "./cors";
+import cors from "../cors";
 
 const authService = getCredentialsFromEnv();
 const driver = new Driver({

@@ -1,5 +1,5 @@
 const express = require('express')
-const index = require('./index')
+const index = require('./src')
 const bodyParser = require('body-parser')
 
 const app = express()

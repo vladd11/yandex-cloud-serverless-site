@@ -6,8 +6,8 @@ import {Cloud} from "@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/resour
 import {createDatabase, isDatabaseRunning, listDatabases, setupDatabase} from "./setup/database";
 import inquirer from "inquirer";
 import chalk from "chalk";
-import getDatabasePath from "./utils/getDatabasePath";
-import sleep from "./utils/sleep";
+import getDatabasePath from "./src/utils/getDatabasePath";
+import sleep from "./src/utils/sleep";
 
 import {createServiceAccount, getIamTokenForServiceAccount} from "./setup/serviceAccount";
 import {setupAPIGateway} from "./setup/apigw";

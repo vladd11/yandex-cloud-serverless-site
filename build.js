@@ -10,7 +10,7 @@ module.exports = function () {
         platform: "node",
         external: Object.keys(pkg.dependencies),
 
-        entryPoints: ['index.ts'],
+        entryPoints: ['src/index.ts'],
         outfile: "build/index.js",
         sourcemap: "external"
     })

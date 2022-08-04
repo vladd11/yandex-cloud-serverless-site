@@ -1,7 +1,7 @@
 import {cloudApi, Session} from "@yandex-cloud/nodejs-sdk";
 import {Database, Database_Status} from "@yandex-cloud/nodejs-sdk/dist/generated/yandex/cloud/ydb/v1/database";
 import {Column, Driver, TableDescription, TokenAuthService, Types} from "ydb-sdk";
-import getDatabasePath from "../utils/getDatabasePath";
+import getDatabasePath from "../src/utils/getDatabasePath";
 
 const databaseApi = cloudApi.ydb.database_service;
 

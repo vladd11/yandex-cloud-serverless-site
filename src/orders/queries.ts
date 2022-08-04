@@ -1,7 +1,7 @@
 import {OrderItem} from "../types/product";
 import {Types} from "ydb-sdk";
 import {getCurrentDatetime, SMS_CODE_EXPIRATION_TIME} from "../utils/datetime";
-import {TimeRange} from "../gatsby-material-e-commerce/src/currentDateTime";
+import {TimeRange} from "../../gatsby-material-e-commerce/src/currentDateTime";
 
 export namespace OrderQueries {
     // language=SQL

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import {ApiResponse, Headers, Identity} from "../types/api";
 
 import {sign} from "jsonwebtoken";
-import {sendLoginSMS} from "../sms";
+import {sendLoginSMS} from "../../sms";
 import {getCurrentDatetime, getExpirationDatetime} from "../utils/datetime";
 
 const secretKeyNotDefined = () => {
